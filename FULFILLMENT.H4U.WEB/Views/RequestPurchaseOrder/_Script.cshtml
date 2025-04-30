@@ -1,0 +1,885 @@
+﻿<script>
+    let SUBMIT_CANCEL = false;
+
+    const vendorId = $('#user-info-vendor-id').val();
+    const userRole = $('#user-info-role-name').val();
+
+    const dropdownStatusValues = [
+        { status: 'SHIPPING', value: "กำลังจัดส่ง", color: "warning" },
+        { status: 'CANCEL', value: "ยกเลิก", color: "danger" },
+        { status: 'ARRIVED', value: "ของถึงโกดัง", color: "success" },
+    ];
+
+
+    let headerModel = {
+        id: 0,
+        documentNo: null,
+        documentStatus: "PENDING",
+        vendorId: 0,
+        vendorFlagAddress: true,
+        fromName: null,
+        fromAddress: null,
+        fromTel: null,
+        fromEmail: null,
+        toName: null,
+        toAddress: null,
+        toTel: null,
+        toEmail: null,
+        shippingValue: null,
+        platformValue: null,
+        remark: "",
+    };
+
+    let model = {
+        header: {
+            id: 0,
+            carNumber: null,
+            shippingDate: null,
+            remark: null,
+        },
+        item: [
+            {
+                productId: null,
+                amount: null,
+                remark: null,
+            }
+        ]
+    };
+
+    let viewModel = {
+        id: 0,
+        //documentNo: null,
+        //documentStatus: null,
+        carNumber: null,
+        shippingDate: null,
+        //arrivedDate: null,
+        remark: null,
+    };
+
+    function getFormData() {
+
+        let formData = new FormData(document.getElementById('form-create'));
+
+        const data = {};
+        formData.forEach((value, key) => (data[key] = value));
+        if (!data.id) { data.id = 0; }
+
+        data.id = parseInt(data.id);
+
+        data.fromName = $("[name='displayFromName']").val();
+        data.fromAddress = $("[name='displayFromAddress']").val();
+        data.fromTel = $("[name='displayFromTel']").val();
+        data.fromEmail = $("[name='displayFromEmail']").val();
+
+        return data;
+    }
+
+    function setForm(data) {
+        $('.form-create').hide();
+        $('.form-update').show();
+        document.getElementsByName('id')[0].value = data.id;
+        //document.getElementsByName('documentNo')[0].value = data.documentNo;
+        //document.getElementsByName('documentStatus')[0].value = data.documentStatus;
+        document.getElementsByName('carNumber')[0].value = data.carNumber;
+        document.getElementsByName('shippingDate')[0].value = data.shippingDate;
+        //document.getElementsByName('arrivedDate')[0].value = data.arrivedDate;
+        //document.getElementsByName('remark')[0].value = data.remark;
+
+        document.getElementsByName('carNumber')[0].disabled = true;
+        document.getElementsByName('shippingDate')[0].disabled = true;
+
+
+        document.getElementsByName('remark')[0].value = data.remark;
+        document.getElementsByName('remark')[0].disabled = false;
+        if (data.statusValue != 'PENDING') {
+
+            document.getElementsByName('remark')[0].disabled = true;
+            $('#submit-update').hide();
+
+        }
+
+
+
+        document.getElementById('form-create-create-by').innerText = data.createBy;
+        document.getElementById('form-create-create-date').innerText = dateToFormat(data.createDate);
+        document.getElementById('form-create-update-by').innerText = data.updateBy;
+        document.getElementById('form-create-update-date').innerText = dateToFormat(data.updateDate);
+
+        $('#submit-update').hide();
+
+        if (data.statusValue === 'PENDING') {
+            $('#submit-update').show();
+        }
+    }
+
+    getDropdownProducts();
+    getDropdownShippings();
+    getDropdownPlatform();
+
+    var $repeater = null;
+
+    function getDropdownProducts() {
+        $.ajax({
+            url: '@Url.Action("GET_ALL", "MasterProduct")',
+            data: { vendorId },
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+                console.log('getDropdownProducts', res.output_data);
+
+                if (res.output_data != null) {
+                    res.output_data.forEach((d) => {
+                        $('.productIds').append(`<option value="${d.productId}"> ${d.productSku} : ${d.productName}  ( ขนาด : ${d.productDescription} สี ${d.productColor}) </option>`);
+                    })
+                }
+
+                $repeater = $('.repeater').repeater({
+                    repeaters: [{
+                        selector: '.inner-repeater'
+                    }]
+                });
+
+
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+
+    }
+
+    function getDataVendors() {
+        $.ajax({
+            url: '@Url.Action("GET_ALL", "MasterVendor")',
+            data: { vendorId },
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+                //console.log('getDataVendors', res.output_data);
+
+                var resp = res.output_data[0];
+
+                //console.log(resp);
+
+                $("[name='fromName']").val(resp.contactName);
+                $("[name='fromAddress']").val(resp.contactAddress);
+                $("[name='fromTel']").val(resp.contactTel);
+                $("[name='fromEmail']").val(resp.email);
+
+                $("[name='displayFromName']").val(resp.contactName);
+                $("[name='displayFromAddress']").val(resp.contactAddress);
+                $("[name='displayFromTel']").val(resp.contactTel);
+                $("[name='displayFromEmail']").val(resp.email);
+
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+
+    }
+
+    function getDropdownPlatform() {
+        $.ajax({
+            url: '@Url.Action("GET_ALL", "MasterPlatform")',
+            //data: { vendorId },
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+
+                //console.log('getDropdownPlatform', res.output_data);
+
+                if (res.output_data != null) {
+                    res.output_data.forEach((d) => {
+                        $('.platformValue').append(`<option value="${d.value}">${d.value}</option>`);
+                    })
+                }
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+
+    }
+
+    function getDropdownShippings() {
+        $.ajax({
+            url: '@Url.Action("GET_ALL", "MasterShipping")',
+            //data: { vendorId },
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+
+                //console.log('getDropdownShippings', res.output_data);
+
+                if (res.output_data != null) {
+                    res.output_data.forEach((d) => {
+                        $('.shippingValue').append(`<option value="${d.value}">${d.value}</option>`);
+                    })
+                }
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+
+    }
+
+    function getDataBalanceStock(Element) {
+
+        //console.log($(Element).prop("name"));
+
+        var getElementDDl = $(Element).prop("name");
+
+        let result = getElementDDl.replace("[productId]", "");
+
+        var productId = $("[name='" + getElementDDl + "']").val()
+
+        $.ajax({
+            url: '@Url.Action("GET_STOCK_BALANCE_ITEM", "RequestPurchaseOrder")',
+            data: { productId },
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+
+                //console.log('getDataBalanceStock', res.output_data);
+
+                if (res.status) {
+
+                    if (res.output_data == null) {
+                        res.output_data = 0;
+                    }
+
+                    document.getElementsByName(result + '[stockbalance]')[0].value = res.output_data;
+                }
+                else {
+                    document.getElementsByName(result + '[stockbalance]')[0].value = 0;
+                }
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+    }
+
+    $(".btn-outline-danger").hide();
+
+    $('#add-product').click(() => {
+        setTimeout(() => {
+            $(".btn-outline-danger").show();
+            $(".btn-outline-danger").first().hide();
+        }, 10)
+    })
+
+    let columnDefs = [
+        {
+            field: 'documentNo',
+            headerName: 'เลขที่เอกสาร',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+            cellRenderer: function({ value }) {
+                return '<div> ' + value + ' <i class="fas fa-copy text-secondary pointer" data-toggle="tooltip" data-placement="bottom" title="Copy"  onClick="clipboard(\'' + value + '\')"> ';
+            }
+        },
+        {
+            field: 'trackingNumber',
+            headerName: 'Tracking',
+            filter: 'agTextColumnFilter',
+            minWidth: 230,
+            cellRenderer: function ({ value }) {
+                return '<div> ' + value + ' <i class="fas fa-copy text-secondary pointer" data-toggle="tooltip" data-placement="bottom" title="Copy"  onClick="clipboard(\'' + value + '\')"> ';
+            }
+        },
+        {
+            field: 'boxName',
+            headerName: 'ขนาดกล่อง',
+            filter: 'agTextColumnFilter',
+            minWidth: 100,
+        },
+        {
+            field: 'shippingPrice',
+            headerName: 'ค่าจัดส่ง',
+            filter: 'agTextColumnFilter',
+            minWidth: 100,
+        },
+        {
+            field: 'shippingValue',
+            headerName: 'บริษัทขนส่ง',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'shippingDate',
+            headerName: 'วันที่จัดส่ง',
+            filter: 'agTextColumnFilter',
+            filterParams: {
+                caseSensitive: true,
+                textMatcher: (data) => {
+                    return dateToFormat(data.value).indexOf(data.filterText) > -1;
+                }
+            },
+            minWidth: 200,
+            cellRenderer: function ({ value }) {
+                if (value == null) {
+                    return ' N/A ';
+                }
+                else {
+                    return '' + dateToFormat(value, 'DD/MM/YYYY HH:mm:ss');
+                }
+            }
+        },
+        {
+            field: 'vendorName',
+            headerName: 'บริษัท - คู่ค้า',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'createBy',
+            headerName: 'ผู้ทำรายการ',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'createDate',
+            headerName: 'วันที่ทำรายการ',
+            filter: 'agTextColumnFilter',
+            filterParams: {
+                caseSensitive: true,
+                textMatcher: (data) => {
+                    return dateToFormat(data.value).indexOf(data.filterText) > -1;
+                }
+            },
+            minWidth: 200,
+            cellRenderer: function ({ value }) {
+                if (value == null) {
+                    return ' N/A ';
+                }
+                else {
+                    return '' + dateToFormat(value, 'DD/MM/YYYY HH:mm:ss');
+                }
+            }
+        },
+        {
+            field: 'documentStatus',
+            headerName: 'สถานะ',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+            cellRenderer: function({ data }) {
+                //const status = data.documentStatus;
+                //const dropdown = dropdownStatusValues.find(d => d.value === status);
+                //return `<span class="badge bg-${data.color}">${data.documentStatus}</span>`;
+                if (data.documentStatus == "PENDING") {
+                    return '<span class="badge bg-warning w-50"> PENDING </span>';
+                }
+                else if (data.documentStatus == "PICKLIST") {
+                    return '<span class="badge bg-success w-50"> PICKED </span>';
+                }
+                else if (data.documentStatus == "CANCEL") {
+                    return '<span class="badge bg-danger w-50"> CANCEL </span>';
+                }
+                else if (data.documentStatus == "SHIPPED") {
+                    return '<span class="badge bg-success w-50"> SHIPPED </span>';
+                }
+                else {
+                    return '<span class="badge bg-primary w-50"> ' + data.documentStatus + ' </span>';
+                }
+            }
+        },
+        {
+            field: 'action',
+            headerName: '',
+            cellStyle: { textAlign: 'center' },
+            minWidth: 60,
+            width: 60,
+            pinned: 'right',
+            cellRenderer: function({ data }) {
+                if (data.documentStatus == "PENDING") {
+                    return '<div><i class="fas fa-edit text-warning pointer" data-toggle="tooltip" data-placement="bottom" title="แก้ไข"  onClick="openEditModal(' + data.id + ')"> ';
+                }
+                else if (data.documentStatus == "PICKLIST") {
+                    return '<div><i class="fas fa-eye text-secondary pointer" data-toggle="tooltip" data-placement="bottom" title="ดูข้อมูล"  onClick="openEditModal(' + data.id + ')"> ';
+                }
+                else {
+                    return '<div><i class="fas fa-eye text-secondary pointer" data-toggle="tooltip" data-placement="bottom" title="ดูข้อมูล"  onClick="openEditModal(' + data.id + ')"> ';
+                }
+            }
+
+        }
+    ];
+</script>
+
+<script>
+    $(document).ready(function() {
+        var gridDiv = document.querySelector('#appTable');
+        new agGrid.Grid(gridDiv, gridOptions);
+        gridOptions.api.sizeColumnsToFit();
+        getItems();
+
+        var gridDivSuccess = document.querySelector('#appTableSuccess');
+        new agGrid.Grid(gridDivSuccess, gridOptionsSuccess);
+        gridOptionsSuccess.api.sizeColumnsToFit();
+        getItemsSuccess();
+    });
+
+    // GET
+    function getItems() {
+        $.ajax({
+            url: '@Url.Action("GET_ALL", ViewData["ControllerName"])',
+            contentType: "application/json; charset=utf-8",
+            data: { documentStatus : "PENDING" },
+            dataType: "json",
+            success: (res) => {
+                console.log('getItems', res);
+                var outputData = res.output_data;
+                gridOptions.api.setRowData(outputData);
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+    }
+
+    function getItemsSuccess() {
+        $.ajax({
+            url: '@Url.Action("GET_ALL", ViewData["ControllerName"])',
+            contentType: "application/json; charset=utf-8",
+            data: { documentStatus: "SHIPPED" },
+            dataType: "json",
+            success: (res) => {
+                //console.log('getItems', res);
+                var outputData = res.output_data;
+                gridOptionsSuccess.api.setRowData(outputData);
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+    }
+
+    const checkbox = document.getElementById('checkboxFlagAdress')
+
+    checkbox.addEventListener('change', (event) => {
+        if (event.currentTarget.checked) {
+            getDataVendors();
+        } else {
+            $("[name='fromName']").val('');
+            $("[name='fromAddress']").val('');
+            $("[name='fromTel']").val('');
+            $("[name='fromEmail']").val('');
+        }
+        $("[name='fromName']").prop('disabled', event.currentTarget.checked);
+        $("[name='fromAddress']").prop('disabled', event.currentTarget.checked);
+        $("[name='fromTel']").prop('disabled', event.currentTarget.checked);
+        $("[name='fromEmail']").prop('disabled', event.currentTarget.checked);
+    })
+
+    function onFillterTable() {
+        gridOptions.api.setQuickFilter(
+            document.getElementById('filter-text-box').value
+        );
+    }
+
+    function onFillterTableSuccess() {
+        gridOptionsSuccess.api.setQuickFilter(
+            document.getElementById('filter-text-box-success').value
+        );
+    }
+
+    // CREATE
+
+    $('#alert-product').hide();
+
+    $(function() {
+        $("#form-create").on("submit", function(e) {
+            $('#alert-product').hide();
+
+            var form = $(this)[0];
+            if (SUBMIT_CANCEL) {
+                cancelPo();
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            else if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            else if (invalidProduct()) {
+                alertWarning("Do not choose the same type of product.");
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            else {
+                saveItem();
+                event.preventDefault();
+            }
+            form.classList.add('was-validated');
+        });
+    });
+
+    function invalidProduct() {
+        var ek = $('.productIds').map((_, el) => el.value).get();
+        return ek.some((e, i, arr) => arr.indexOf(e) !== i);
+    }
+
+    function saveItem() {
+        let dataForm = getFormData();
+        //console.log(dataForm);
+
+        let data = {};
+        data.header = tranformDataToModel(dataForm);
+        const rep = $('.repeater').repeaterVal();
+        //console.log('rep', rep);
+        let validateAmountMoreStock = false;
+        data.item = rep.item.map(i => {
+            if (parseInt(i.amount) > parseInt(i.stockbalance)) {
+                validateAmountMoreStock = true;
+            }
+            return {
+                id: 0,
+                headerId: parseInt(i.productId), //<--
+                productId: parseInt(i.productId),
+                amount: parseInt(i.amount),
+                remark: i.remark,
+                statusValue: 'PENDING',
+            };
+        })
+
+        if (validateAmountMoreStock) {
+            alertWarning('The amount of products is greater than what is in stock.');
+            return;
+        }
+
+        //console.log('saveItem', data);
+
+        url = '@Url.Action("INSERT", ViewData["ControllerName"])';
+        $.ajax({
+            type: "POST",
+            url: url,
+            data: JSON.stringify(data),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: function(res) {
+                if (res.status === false) {
+                    alertError(res.message);
+                    return;
+                }
+
+                getItems();
+                $('#new-item-modal').modal('hide');
+                alertSuccess();
+            },
+            error: (res) => {
+                alertError(res.message);
+            },
+        });
+    }
+
+    function cancelPo() {
+
+        var setDataId = $("[name='headerId']").val();
+        var setDataRemark = $("[name='remark']").val();
+
+        var model = new Object();
+        model.id = parseInt(setDataId);
+        model.remark = setDataRemark;
+
+        //console.log(model);
+
+        var url = '@Url.Action("CANCEL", ViewData["ControllerName"])';
+
+        $.ajax({
+            type: "POST",
+            url: url,
+            data: JSON.stringify(model),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: function(res) {
+                if (res.status === false) {
+                    alertError(res.message);
+                    return;
+                }
+
+                getItems();
+                $('#new-item-modal').modal('hide');
+                alertSuccess();
+            },
+            error: (res) => {
+                alertError(res.message);
+            },
+
+        });
+    }
+
+    // CREATE
+    function openCreateModal() {
+
+        document.getElementById("checkboxFlagAdress").disabled = false;
+        document.getElementsByName("fromName")[0].disabled = false;
+        document.getElementsByName("fromAddress")[0].disabled = false;
+        document.getElementsByName("fromTel")[0].disabled = false;
+        document.getElementsByName("fromEmail")[0].disabled = false;
+        document.getElementsByName("toName")[0].disabled = false;
+        document.getElementsByName("toAddress")[0].disabled = false;
+        document.getElementsByName("toTel")[0].disabled = false;
+        document.getElementsByName("toEmail")[0].disabled = false;
+        document.getElementsByName("remark")[0].disabled = false;
+        document.getElementsByName("shippingValue")[0].disabled = false;
+        document.getElementsByName("platformValue")[0].disabled = false;
+
+        $('#areaProductRepeater').css('display', 'inline');
+
+        clearForm();
+        openFormModal({ isEdit: false })
+        $('.form-create').show();
+        $('.form-update').hide();
+
+
+    }
+
+    function openEditModal(id) {
+        clearForm();
+
+        $.ajax({
+            type: "POST",
+            url: '@Url.Action("ITEM_GET_ALL_BY_HEADER", ViewData["ControllerName"])?headerId=' + id,
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+                //console.log('getItem', res);
+                if (!res) {
+                    return;
+                }
+
+                if (res[0].vendorFlagAddress == true) {
+                    document.getElementById("checkboxFlagAdress").checked = true;
+                }
+                else {
+                    document.getElementById("checkboxFlagAdress").checked = false;
+                }
+
+                if (res[0].statusValue == "CANCEL" || res[0].statusValue == "PICKLIST") {
+
+                    document.getElementsByName("remark")[0].disabled = true;
+
+                    $('#submit-update').css('display', 'none');
+
+                    if (userRole == "ADMINISTRATOR") {
+
+                        if (res[0].statusValue == "CANCEL") {
+                            $('#submit-update').css('display', 'none');
+                        }
+                        else {
+                            $('#submit-update').css('display', 'inline');
+                        }
+                    }
+                }
+                else {
+                    document.getElementsByName("remark")[0].disabled = false;
+                    $('#submit-update').css('display', 'inline');
+                }
+
+
+                document.getElementsByName("id")[0].value = res[0].id;
+                document.getElementsByName("headerId")[0].value = res[0].headerId;
+                document.getElementsByName("fromName")[0].value = res[0].fromName;
+                document.getElementsByName("fromAddress")[0].value = res[0].fromAddress;
+                document.getElementsByName("fromTel")[0].value = res[0].fromTel;
+                document.getElementsByName("fromEmail")[0].value = res[0].fromEmail;
+                document.getElementsByName("toName")[0].value = res[0].toName;
+                document.getElementsByName("toAddress")[0].value = res[0].toAddress;
+                document.getElementsByName("toTel")[0].value = res[0].toTel;
+                document.getElementsByName("toEmail")[0].value = res[0].toEmail;
+                document.getElementsByName("remark")[0].value = res[0].remark;
+                document.getElementsByName("shippingValue")[0].value = res[0].shippingValue;
+                document.getElementsByName("platformValue")[0].value = res[0].platformValue;
+
+                document.getElementById("checkboxFlagAdress").disabled = true;
+                document.getElementsByName("fromName")[0].disabled = true;
+                document.getElementsByName("fromAddress")[0].disabled = true;
+                document.getElementsByName("fromTel")[0].disabled = true;
+                document.getElementsByName("fromEmail")[0].disabled = true;
+                document.getElementsByName("toName")[0].disabled = true;
+                document.getElementsByName("toAddress")[0].disabled = true;
+                document.getElementsByName("toTel")[0].disabled = true;
+                document.getElementsByName("toEmail")[0].disabled = true;
+                document.getElementsByName("remark")[0].disabled = false;
+                document.getElementsByName("shippingValue")[0].disabled = true;
+                document.getElementsByName("platformValue")[0].disabled = true;
+
+                $('.form-update-products').css('display', 'block');
+
+                const products = res;
+                $('.form-update-products').html('');
+
+                var countAll = 0;
+
+                products.forEach((p) => {
+
+                    console.log(p);
+
+                    countAll = countAll + p.amount;
+
+                    $('.form-update-products').append(`
+                                                        <div class="row">
+                                                            <div class="col-5">${p.productName} ( ขนาด : ${p.productDescription} สี ${p.productColor}) </div>
+                                                        <div class="col-2">${p.amount} รายการ</div>
+                                                        <div class="col-3">${p.remark}</div>
+                                                </div>`);
+                })
+
+                $('.form-update-products').append(`
+                                                            <div class="row">
+                                                                <div class="col-5">รวมรายการทั้งสิ้น</div>
+                                                                <div class="col-2">${countAll} รายการ</div>
+                                                            <div class="col-3"></div>
+                                                    </div>`);
+
+                $('#areaProductRepeater').css('display', 'none');
+
+
+                openFormModal({ isEdit: true })
+            },
+            error: (res) => {
+                alertError(res.message);
+            },
+        });
+    }
+
+    // DELETE
+    // function clickRowDelete(id) {
+    //     alertConfirm(deleteItem, id);
+    // }
+
+    // function deleteItem(id) {
+
+    //     $.ajax({
+    //         type: "POST",
+    //         url: '@Url.Action("DELETE", ViewData["ControllerName"])?id=' + id,
+    //         contentType: "application/json; charset=utf-8",
+    //         dataType: "json",
+    //         success: (res) => {
+
+    //             if (res.status) {
+    //                 getItems();
+    //                 alertSuccess();
+    //             }
+    //             else {
+    //                 alertError(res.message);
+    //             }
+
+
+    //         },
+    //         error: (res) => {
+    //             alertError(res.message);
+    //         },
+    //     });
+    // }
+
+    function clearForm() {
+        $('#form-create').removeClass('was-validated')
+        document.getElementsByName('id')[0].value = "";
+        document.getElementById("form-create").reset();
+        $repeater.setList([
+            {
+                'productId': null,
+                'amount': null,
+                'remark': '',
+            },
+        ]);
+    }
+
+
+    function openFormModal({ isEdit }) {
+        SUBMIT_CANCEL = isEdit;
+
+        //console.log(SUBMIT_CANCEL);
+
+        if (isEdit) {
+            $('#form-create-title').text('แก้ไข ');
+            $('#form-create-by').show()
+            $('#submit-add').hide()
+        }
+        else {
+            $('#form-create-title').text('เพิ่ม ');
+            $('#form-create-by').hide()
+            $('#submit-update').hide()
+            $('#submit-add').show()
+        }
+
+        var modalCreate = new bootstrap.Modal(document.getElementById('new-item-modal'), {
+            keyboard: false
+        })
+        modalCreate.show();
+    }
+
+    const gridOptions = {
+        pagination: true,
+        paginationPageSize: 20,
+        paginationAutoPageSize: true,
+        columnDefs,
+        defaultColDef: {
+            flex: 1,
+            minWidth: 100,
+            sortable: true,
+            resizable: true,
+            floatingFilter: true,
+        },
+        autoGroupColumnDef: {
+            minWidth: 100,
+        },
+        suppressDragLeaveHidesColumns: true
+    };
+    
+    const gridOptionsSuccess = {
+        pagination: true,
+        paginationPageSize: 20,
+        paginationAutoPageSize: true,
+        columnDefs,
+        defaultColDef: {
+            flex: 1,
+            minWidth: 100,
+            sortable: true,
+            resizable: true,
+            floatingFilter: true,
+        },
+        autoGroupColumnDef: {
+            minWidth: 100,
+        },
+        suppressDragLeaveHidesColumns: true
+    };
+
+    function onExportExcel() {
+        gridOptions.api.exportDataAsCsv();
+    }
+
+    function onExportExcelSuccess() {
+        gridOptionsSuccess.api.exportDataAsCsv();
+    }
+
+    function tranformDataToModel(data) {
+        // headerModel
+        // model.header.id = data.id;
+        // model.header.carNumber = data.carNumber;
+        // model.header.shippingDate = data.shippingDate;
+        // model.header.remark = data.remark;
+        // return model;
+
+        Object.keys(data).forEach(function(key) {
+            if (key in headerModel) {
+                headerModel[key] = data[key];
+            }
+        });
+        return headerModel;
+    }
+
+    function clipboard(value) {
+        //console.log('copy text is ' + value);
+
+        navigator.clipboard.writeText(value);
+
+        toastAlert('success','Success', 'Copied: ' + value + '👋');
+
+    }
+
+</script>

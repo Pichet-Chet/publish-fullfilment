@@ -1,0 +1,28 @@
+﻿@{
+    Layout = "~/Views/Shared/Template/_Master.cshtml";
+}
+
+<!-- Input Start-->
+<input type="hidden" class="form-control" name="id" />
+
+
+<div class="mb-1">
+    <label class="form-label required">Value</label>
+    <input type="text" class="form-control" name="value" required />
+</div>
+<div class="mb-1">
+    <label class="form-label required">ชื่อประเภท (English)</label>
+    <input type="text" class="form-control" name="nameEn" required />
+</div>
+<div class="mb-1">
+    <label class="form-label required">ชื่อประเภท (Thai)</label>
+    <input type="text" class="form-control" name="nameTh" required />
+</div>
+
+<div class="mb-1">
+    <div class="form-check">
+        <input type="checkbox" class="form-check-input" name="isActive" id="isActive">
+        <label class="form-check-label" for="isActive">เปิด - ปิด</label>
+    </div>
+</div>
+<!-- Input End-->

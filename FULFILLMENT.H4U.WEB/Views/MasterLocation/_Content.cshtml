@@ -1,0 +1,32 @@
+﻿@{ Layout = "~/Views/Shared/Template/_Master.cshtml"; }
+
+<!-- Input Start-->
+<input type="hidden" class="form-control" name="locationId" />
+<input type="hidden" class="form-control" name="locationType" value="NORMAL"/>
+
+
+<div class="row">
+    <div class="col-lg-12">
+        <div class="mb-1">
+            <label class="form-label required">ชื่อพื้นที่</label>
+            <input type="text" class="form-control" name="locationName" maxlength="25" required />
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-12">
+        <div class="mb-1">
+            <label class="form-label">รายละเอียด</label>
+            <input type="text" class="form-control" name="locationDescription" maxlength="250" />
+        </div>
+    </div>
+</div>
+
+<div class="mb-1">
+    <div class="form-check">
+        <input type="checkbox" class="form-check-input" name="isActive" id="isActive" value="true">
+        <label class="form-check-label" for="isActive">เปิด - ปิด</label>
+    </div>
+</div>
+<!-- Input End-->

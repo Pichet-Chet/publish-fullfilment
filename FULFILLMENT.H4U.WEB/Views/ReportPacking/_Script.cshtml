@@ -1,0 +1,245 @@
+﻿<script>
+    let PO_PENDING_LIST = [];
+    let VENDORS = [];
+    let BOXS = [];
+    let BINS = [];
+
+    // START GET MASTER
+    getBoxs();
+    getBins();
+    getVendors();
+
+    function getBoxs() {
+        $.ajax({
+            url: '@Url.Action("GET_ALL", "MasterBox")',
+            // data: { isActive: true, binType: 'INVENTORY' },
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+                //console.log('getBoxs', res.output_data);
+                BOXS = res.output_data;
+                setDropdownBoxs();
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+    }
+
+    function setDropdownBoxs() {
+        $('.boxId').html(`<option value="">--- กรุณาเลือกข้อมูล ---</option>`);
+        BOXS.forEach((d) => {
+            $('.boxId').append(`<option value="${d.id}">${d.name} : ${d.size}</option>`);
+        })
+    }
+
+    function getVendors() {
+        $.ajax({
+            url: '@Url.Action("GET_ALL", "MasterVendor")',
+            data: { isActive: true },
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+                //console.log('getVendors', res.output_data);
+                VENDORS = res.output_data;
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+    }
+
+    function getBins() {
+        $.ajax({
+            url: '@Url.Action("GET_ALL", "MasterBin")',
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+                //console.log('getBins', res.output_data);
+                BINS = res.output_data;
+
+                var gridDiv = document.querySelector('#appTable');
+                new agGrid.Grid(gridDiv, gridOptions);
+                getItems();
+
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+    }
+
+    function findBin(id) {
+        return BINS.find(x => x.binId == id);
+    }
+
+    function findVendor(id) {
+        return VENDORS.find(x => x.id == id);
+    }
+    // END GET MASTER
+
+
+    let columnDefs = [
+        {
+            field: 'documentNo',
+            headerName: 'เลขที่เอกสาร',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'vendorName',
+            headerName: 'บริษัท  - คู่ค้า',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'binId',
+            headerName: 'BIN',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+            cellRenderer: ({ value }) => {
+                if (!value)
+                    return '';
+                const bin = findBin(value)
+                return bin.binName;
+            }
+        },
+        {
+            field: 'masterBox.name',
+            headerName: 'Box',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'masterBox.size',
+            headerName: 'Box size',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'shippingDate',
+            headerName: 'Shipping Date',
+            filter: 'agTextColumnFilter',
+            filterParams: {
+                caseSensitive: true,
+                textMatcher: (data) => {
+                    return dateToFormat(data.value).indexOf(data.filterText) > -1;
+                }
+            },
+            minWidth: 20,
+            cellRenderer: function ({ value }) {
+                if (value == null) {
+                    return ' N/A ';
+                }
+                else {
+                    return '' + dateToFormat(value, 'DD/MM/YYYY HH:mm:ss');
+                }
+            }
+        },
+        {
+            field: 'shippingPrice',
+            headerName: 'Shipping Price',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'createBy',
+            headerName: 'Create By',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'createDate',
+            headerName: 'Create Date',
+            filter: 'agTextColumnFilter',
+            filterParams: {
+                caseSensitive: true,
+                textMatcher: (data) => {
+                    return dateToFormat(data.value).indexOf(data.filterText) > -1;
+                }
+            },
+            minWidth: 200,
+            cellRenderer: function ({ value }) {
+                if (value == null) {
+                    return ' N/A ';
+                }
+                else {
+                    return '' + dateToFormat(value, 'DD/MM/YYYY HH:mm:ss');
+                }
+            }
+        },
+    ];
+
+    // GET
+    function getItems() {
+        $.ajax({
+            url: '@Url.Action("GET_ALL", ViewData["ControllerName"])',
+            //data: { documentStatus: "PACKING" },
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+                //console.log('getItems', res);
+                var outputData = res.output_data;
+                gridOptions.api.setRowData(outputData);
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+    }
+
+    function onFillterTable() {
+        gridOptions.api.setQuickFilter(
+            document.getElementById('filter-text-box').value
+        );
+    }
+
+    const gridOptions = {
+        pagination: true,
+        paginationPageSize: 20,
+        paginationAutoPageSize: true,
+        columnDefs,
+        defaultColDef: {
+            flex: 1,
+            minWidth: 100,
+            sortable: true,
+            resizable: true,
+            floatingFilter: true,
+        },
+        autoGroupColumnDef: {
+            minWidth: 100,
+        },
+        suppressDragLeaveHidesColumns: true
+    };
+
+    function onExportExcel() {
+        gridOptions.api.exportDataAsCsv();
+    }
+
+    function onlyNumberKey(evt) {
+
+        var ASCIICode = (evt.which) ? evt.which : evt.keyCode
+        if (ASCIICode > 31 && (ASCIICode < 48 || ASCIICode > 57))
+            return false;
+        return true;
+    }
+
+    function onlyDecimalKey(evt) {
+
+        var charCode = (evt.which) ? evt.which : evt.keyCode;
+        if (charCode != 46 && charCode > 31
+            && (charCode < 48 || charCode > 57))
+            return false;
+
+        return true;
+    }
+
+    function clipboard(value) {
+        //console.log('copy text is ' + value);
+
+        navigator.clipboard.writeText(value);
+
+        toastAlert('success', 'Success', 'Copied: ' + value + '👋');
+    }
+
+</script>

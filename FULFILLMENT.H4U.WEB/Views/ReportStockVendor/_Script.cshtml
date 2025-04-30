@@ -1,0 +1,350 @@
+﻿
+<script>
+
+    $(document).ready(function () {
+        var gridDiv = document.querySelector('#appTable');
+        new agGrid.Grid(gridDiv, gridOptions);
+        gridOptions.api.sizeColumnsToFit();
+        getItems();
+    });
+
+    // GET
+    function getItems() {
+        $.ajax({
+            url: '@Url.Action("GET_ALL", ViewData["ControllerName"])',
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+                console.log('getItems', res);
+                var outputData = res.output_data;
+                gridOptions.api.setRowData(outputData);
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+    }
+
+    let columnDefs = [
+
+        {
+            field: 'productName',
+            headerName: 'ชื่อสินค้า',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'productDescription',
+            headerName: 'ขนาด',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'productColor',
+            headerName: 'สี',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'productSku',
+            headerName: 'SKU',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'amount',
+            headerName: 'จำนวน (ชิ้น)',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'action',
+            headerName: '',
+            cellStyle: { textAlign: 'center' },
+            minWidth: 50,
+            width: 50,
+            pinned: 'right',
+            cellRenderer: function (params) {
+                return `
+                        <div class="text-primary">
+                            <i class="fas fa-file-image" data-toggle="tooltip" data-placement="bottom" title="เพิ่มรูปภาพ" onClick="showImageAdd('${params.data.productId}')">
+                            </div>`;
+            }
+        },
+
+    ];
+
+    const gridOptions = {
+        pagination: true,
+        paginationPageSize: 20,
+        paginationAutoPageSize: true,
+        columnDefs,
+        defaultColDef: {
+            flex: 1,
+            minWidth: 100,
+            sortable: true,
+            resizable: true,
+            floatingFilter: true,
+        },
+        autoGroupColumnDef: {
+            minWidth: 100,
+        },
+        suppressDragLeaveHidesColumns: true
+    };
+
+    function onFillterTable() {
+        gridOptions.api.setQuickFilter(
+            document.getElementById('filter-text-box').value
+        );
+    }
+
+
+    function onExportExcel() {
+        gridOptions.api.exportDataAsCsv();
+    }
+
+    function tranformDataToModel(data) {
+        Object.keys(data).forEach(function (key) {
+            if (key in model) {
+                model[key] = data[key];
+            }
+        });
+        return model;
+    }
+
+
+
+    function showImageAdd(id) {
+        $('#showImageProductModal').modal('show');
+
+        $('#renderImageProduct').html('');
+
+        $('#txtValueProductId').val(id);
+
+        $.ajax({
+            url: '@Url.Action("GetFile", "MasterProduct")',
+            data: { productId: parseInt(id) },
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+
+                if (res.status) {
+                    var renderData = "";
+
+                    res.output_data.forEach((d) => {
+
+                        renderData += `
+                                                <div class="col-6 col-md-4 col-lg-3 col-xl-2" >
+                                                    <div class="card">
+                                                        <div class="ratio ratio-1x1">
+                                                            <img class="card-img-top ratio ratio-1x1" src='data:image/jpeg;base64,${d.base64}' alt="Card image cap" />
+                                                        </div>
+                                                        <div class="card-body">
+                                                        <hr/>
+                                                        <center>
+                                                            <a onclick="deleteImage('${d.name}')" class="btn btn-outline-danger text-danger">ลบรูปภาพ</a>
+                                                            </center>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            `;
+                    });
+
+                    $('#renderImageProduct').html(renderData);
+
+                }
+
+
+
+
+            },
+            error: (res) => {
+                //alertError(res.statusText);
+            },
+        });
+    }
+
+    function AddImage() {
+
+        $('#imageProductModal').modal('show');
+
+        document.getElementById("formUpdateImageProduct").reset();
+
+        $("#file-update-product").fileinput({
+            'theme': 'fa5',
+            //'theme': 'bs5',
+            //'theme': 'explorer-fa5',
+
+            uploadAsync: true,
+            showUpload: false,
+            showRemove: true,
+            showPreview: true,
+            maxFileSize: 2000,
+            browseOnZoneClick: true,
+            browseIcon: '<i class="fa fa-folder-open"></i> ',
+            removeIcon: '<i class="fa fa-trash"></i> ',
+            uploadUrl: "/file-upload-batch/2",
+            previewFileIcon: '<i class="fa fa-file"></i>',
+            layoutTemplates: {
+                actions: '<div class="file-actions">\n' +
+                    '    <div class="file-footer-buttons">\n' +
+                    '        {download} {delete} {zoom} {other}' +
+                    '    </div>\n' +
+                    '    {drag}\n' +
+                    '    <div class="clearfix"></div>\n' +
+                    '</div>',
+                actionDelete: '<button type="button" class="kv-file-remove {removeClass}" title="{removeTitle}"{dataUrl}{dataKey}>{removeIcon}</button>\n',
+                actionDownload: '<button type="button" class="{downloadClass}" title="{downloadTitle}" data-url="{downloadUrl}" data-caption="{caption}">{downloadIcon}</button>\n',
+                actionRotate: '<button type="button" class="kv-file-rotate {rotateClass}" title="{rotateTitle}">{rotateIcon}</button>\n',
+                actionZoom: '<button type="button" class="kv-file-zoom {zoomClass}" title="{zoomTitle}">{zoomIcon}</button>',
+                actionDrag: '<span class="file-drag-handle {dragClass}" title="{dragTitle}">{dragIcon}</span>'
+            },
+        });
+    }
+
+    function UploadData() {
+
+        var inputfileupload = $('#file-update-product').val();
+
+
+        if ((inputfileupload != '')) {
+            var getProductId = parseInt($('#txtValueProductId').val());
+            var formdata = new FormData(); //FormData object
+            var fileInput = document.getElementById('file-update-product');
+
+            for (i = 0; i < fileInput.files.length; i++) {
+                formdata.append(fileInput.files[i].name, fileInput.files[i]);
+            }
+
+            var xhr = new XMLHttpRequest();
+            var hostname = window.location.hostname;
+
+
+            var urllink = '@Url.Action("UploadFile","MasterProduct")' + '?productId=' + getProductId;
+            xhr.open('POST', urllink);
+            xhr.send(formdata);
+            xhr.onreadystatechange = function () {
+
+                var resData = JSON.parse(xhr.responseText);
+
+                //console.log(resData.status);
+
+                if (resData.status == true) {
+                    $('#imageProductModal').modal('hide');
+
+                    //console.log($('#txtValueProductId').val());
+
+                    $('#renderImageProduct').html('');
+
+
+                    $.ajax({
+                        url: '@Url.Action("GetFile", "MasterProduct")',
+                        data: { productId: parseInt($('#txtValueProductId').val()) },
+                        contentType: "application/json; charset=utf-8",
+                        dataType: "json",
+                        success: (res) => {
+
+                            var renderData = "";
+
+                            res.output_data.forEach((d) => {
+
+                                renderData += `
+                                                <div class="col-6 col-md-4 col-lg-3 col-xl-2" >
+                                                    <div class="card">
+                                                        <div class="ratio ratio-1x1">
+                                                            <img class="card-img-top ratio ratio-1x1" src='data:image/jpeg;base64,${d.base64}' alt="Card image cap" />
+                                                        </div>
+                                                        <div class="card-body">
+                                                        <hr/>
+                                                        <center>
+                                                            <a onclick="deleteImage('${d.name}')" class="btn btn-outline-danger text-danger">ลบรูปภาพ</a>
+                                                            </center>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            `;
+
+                            });
+
+                            $('#renderImageProduct').html(renderData);
+
+                        },
+                        error: (res) => {
+                            alertError(res.statusText);
+                        },
+                    });
+
+
+                }
+                else {
+                    alertError(resData.message);
+                }
+            }
+        }
+        else {
+
+
+        }
+    }
+
+
+    function deleteImage(name) {
+
+        //console.log(name)
+
+        $.ajax({
+            type: "POST",
+            url: '@Url.Action("DeleteFile", "MasterProduct")?filename=' + name + '&productId=' + parseInt($('#txtValueProductId').val()),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+                $('#renderImageProduct').html('');
+
+
+                $.ajax({
+                    url: '@Url.Action("GetFile", "MasterProduct")',
+                    data: { productId: parseInt($('#txtValueProductId').val()) },
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    success: (res) => {
+                        if (res.status) {
+
+                            var renderData = "";
+
+                            res.output_data.forEach((d) => {
+
+                                renderData += `
+                                                <div class="col-6 col-md-4 col-lg-3 col-xl-2" >
+                                                    <div class="card">
+                                                        <div class="ratio ratio-1x1">
+                                                            <img class="card-img-top ratio ratio-1x1" src='data:image/jpeg;base64,${d.base64}' alt="Card image cap" />
+                                                        </div>
+                                                        <div class="card-body">
+                                                        <hr/>
+                                                        <center>
+                                                            <a onclick="deleteImage('${d.name}')" class="btn btn-outline-danger text-danger">ลบรูปภาพ</a>
+                                                            </center>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            `;
+
+                            });
+                        }
+
+                        $('#renderImageProduct').html(renderData);
+
+                    },
+                    error: (res) => {
+                        alertError(res.statusText);
+                    },
+                });
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+    }
+
+
+</script>

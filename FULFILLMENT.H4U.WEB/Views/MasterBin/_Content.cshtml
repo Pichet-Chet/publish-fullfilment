@@ -1,0 +1,52 @@
+﻿@{
+    Layout = "~/Views/Shared/Template/_Master.cshtml";
+}
+
+<!-- Input Start-->
+<input type="hidden" class="form-control" name="binId" />
+
+<div class="row">
+    <div class="col-lg-12">
+        <div class="mb-1">
+            <label class="form-label required">หมายเลข</label>
+            <input type="text" class="form-control" name="binNumber" maxlength="20" required />
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-lg-12">
+        <div class="mb-1">
+            <label class="form-label">รายละเอียด</label>
+            <input type="text" class="form-control" name="binDescription" maxlength="250" />
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-lg-6">
+        <div class="mb-1">
+            <label class="form-label">ประเภท</label>
+            <select class="form-select" name="binType" required>
+                <option value="">--- กรุณาเลือกข้อมูล ---</option>
+            </select>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="mb-1">
+            <label class="form-label">สถานะ</label>
+            <select class="form-select" name="binStatus" required>
+                <option value="">--- กรุณาเลือกข้อมูล ---</option>
+            </select>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-lg-12">
+        <div class="mb-1">
+            <div class="form-check">
+                <input type="checkbox" class="form-check-input" id="isActive" name="isActive" value="true">
+                <label class="form-check-label" for="isActive">เปิด - ปิด</label>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Input End-->

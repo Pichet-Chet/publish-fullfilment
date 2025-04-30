@@ -1,0 +1,63 @@
+﻿@using FULFILLMENT_H4U.Helper
+@using FULFILLMENT.H4U.API.Model.Custom;
+
+
+@{
+    ViewSysUserModel userInfo = SessionHelper.GetObjectFromJson<ViewSysUserModel>(Context.Session, "UserInfo");
+}
+
+@{
+    ViewData["Title"] = "หน้าแรก";
+}
+
+<div class="content-wrapper container-xxl p-0">
+    <div class="content-header row">
+    </div>
+    <div class="content-body">
+        <!-- Dashboard Ecommerce Starts -->
+        <section id="dashboard-ecommerce">
+            <div class="row match-height">
+                <!-- Company Table Card -->
+                @foreach (var group in userInfo.groupAccess.OrderBy(x => x.MenuSequence))
+                {
+                    <div class="col-lg-12 col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h4 class="card-title"><i class="@group.MenuIcon"></i> @group.MenuName</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    @foreach (var menu in userInfo.menuAccess.OrderBy(x => x.MenuSequence))
+                                    {
+                                        if (menu.IsActive == true)
+                                        {
+                                            @if (menu.MenuGroup == group.Id)
+                                            {
+                                                @if (Url.Action() == Url.Action(menu.Action, menu.Controller))
+                                                {
+                                                    <div class="col-sm-6 col-md-4 col-lg-3 d-grid p-1">
+                                                        <a class="btn btn-outline-dark" href="@Url.Action(menu.Action,menu.Controller)"> @menu.MenuName </a>
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    <div class="col-sm-6 col-md-4 col-lg-3 d-grid p-1">
+                                                        <a class="btn btn-outline-dark" href="@Url.Action(menu.Action,menu.Controller)"> @menu.MenuName </a>
+                                                    </div>
+                                                }
+                                            }
+                                        }
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+            </div>
+        </section>
+        <!-- Dashboard Ecommerce ends -->
+
+
+    </div>
+</div>

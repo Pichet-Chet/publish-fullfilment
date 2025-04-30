@@ -1,0 +1,624 @@
+﻿<script>
+
+    const vendorId = $('#user-info-vendor-id').val();
+
+    const dropdownStatusValues = [
+        { status: 'SHIPPING', value: "กำลังจัดส่ง", color: "warning" },
+        { status: 'CANCEL', value: "ยกเลิก", color: "danger" },
+        { status: 'ARRIVED', value: "ของถึงโกดัง", color: "warning" },
+        { status: 'RECEIVED', value: "รับของเรียบร้อย", color: "success" },
+    ];
+
+    let model = {
+        header: {
+            id: 0,
+            carNumber: null,
+            shippingDate: null,
+            remark: null,
+        },
+        item: [
+            {
+                productId: null,
+                amount: null,
+                remark: null,
+            }
+        ]
+    };
+
+    let viewModel = {
+        id: 0,
+        //documentNo: null,
+        //documentStatus: null,
+        carNumber: null,
+        shippingDate: null,
+        //arrivedDate: null,
+        remark: null,
+    };
+
+    function getFormData() {
+
+        let formData = new FormData(document.getElementById('form-create'));
+
+        const data = {};
+        formData.forEach((value, key) => (data[key] = value));
+        if (!data.id) { data.id = 0; }
+
+        data.id = parseInt(data.id);
+
+        return data;
+    }
+
+    function setForm(data) {
+        $('.form-create').hide();
+        $('.form-update').show();
+        document.getElementsByName('id')[0].value = data.id;
+        //document.getElementsByName('documentNo')[0].value = data.documentNo;
+        //document.getElementsByName('documentStatus')[0].value = data.documentStatus;
+        document.getElementsByName('carNumber')[0].value = data.carNumber;
+        var today = moment(data.shippingDate).format('YYYY-MM-DD');
+        document.getElementsByName('shippingDate')[0].value = today;
+        //document.getElementsByName('arrivedDate')[0].value = data.arrivedDate;
+        //document.getElementsByName('remark')[0].value = data.remark;
+
+        document.getElementsByName('carNumber')[0].disabled = true;
+        document.getElementsByName('shippingDate')[0].disabled = true;
+
+        document.getElementsByName('shippingValue')[0].value = data.shippingValue;
+        document.getElementsByName('shippingValue')[0].disabled = true;
+
+        if(data.shippingValue == "จัดส่งด้วยตนเอง"){
+            $('#lbInboundInformation').text('ทะเบียนรถ');
+        }
+        else{
+            $('#lbInboundInformation').text('Tracking no.');
+        }
+
+
+        document.getElementsByName('remark')[0].value = data.remark;
+        document.getElementsByName('remark')[0].disabled = true;
+
+
+        document.getElementById('form-create-create-by').innerText = data.createBy;
+        document.getElementById('form-create-create-date').innerText = dateToFormat(data.createDate);
+        document.getElementById('form-create-update-by').innerText = data.updateBy;
+        document.getElementById('form-create-update-date').innerText = dateToFormat(data.updateDate);
+
+        $('#submit-update').hide();
+
+        if (data.documentStatus === 'SHIPPING') {
+            $('#submit-update').show();
+        }
+    }
+
+    getDropdownProducts();
+
+    var $repeater = null;
+
+    function getDropdownProducts() {
+        $.ajax({
+            url: '@Url.Action("GET_ALL", "MasterProduct")',
+            data: { vendorId },
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+                console.log('getDropdownProducts', res.output_data);
+
+                if (res.output_data != null) {
+                    res.output_data.forEach((d) => {
+                        $('.productIds').append(`<option value="${d.productId}">${d.productSku} : ${d.productName} ( ขนาด : ${d.productDescription} สี ${d.productColor}) </option>`);
+                    })
+                }
+
+                $repeater = $('.repeater').repeater({
+                    repeaters: [{
+                        selector: '.inner-repeater'
+                    }]
+                });
+
+
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+
+    }
+
+    $(".btn-outline-danger").hide();
+
+    $('#add-product').click(() => {
+        setTimeout(() => {
+            $(".btn-outline-danger").show();
+            $(".btn-outline-danger").first().hide();
+        }, 10)
+
+    })
+
+    let columnDefs = [
+        {
+            field: 'documentNo',
+            headerName: 'เลขที่เอกสาร',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+            cellRenderer: function ({ value }) {
+                return '<div> ' + value + ' <i class="fas fa-copy text-secondary pointer" data-bs-toggle="tooltip" title="Copied" data-bs-trigger="focus" onClick="clipboard(\'' + value + '\')"> ';
+            }
+        },
+        {
+            field: 'vendorName',
+            headerName: 'บริษัท - คู่ค้า',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'shippingValue',
+            headerName: 'ช่องทางนำเข้าสินค้า',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'carNumber',
+            headerName: 'รายละเอียด',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'shippingDate',
+            headerName: 'วันที่จัดส่ง',
+            filter: 'agTextColumnFilter',
+            filterParams: {
+                caseSensitive: true,
+                textMatcher: (data) => {
+                    return dateToFormat(data.value).indexOf(data.filterText) > -1;
+                }
+            },
+            minWidth: 200,
+            cellRenderer: function ({ value }) {
+                if (value == null) {
+                    return ' N/A ';
+                }
+                else {
+                    return '' + dateToFormat(value, 'DD/MM/YYYY HH:mm:ss');
+                }
+            }
+        },
+        {
+            field: 'arrivedDate',
+            headerName: 'วันที่ของไปถึง',
+            filter: 'agTextColumnFilter',
+            filterParams: {
+                caseSensitive: true,
+                textMatcher: (data) => {
+                    return dateToFormat(data.value).indexOf(data.filterText) > -1;
+                }
+            },
+            minWidth: 200,
+            cellRenderer: function ({ value }) {
+                if (value == null) {
+                    return ' N/A ';
+                }
+                else {
+                    return '' + dateToFormat(value, 'DD/MM/YYYY HH:mm:ss');
+                }
+            }
+        },
+        {
+            field: 'createBy',
+            headerName: 'ผู้สร้างเอกสาร',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'createDate',
+            headerName: 'วันที่ทำรายการ',
+            filter: 'agTextColumnFilter',
+            filterParams: {
+                caseSensitive: true,
+                textMatcher: (data) => {
+                    return dateToFormat(data.value).indexOf(data.filterText) > -1;
+                }
+            },
+            minWidth: 200,
+            cellRenderer: function ({ value }) {
+                if (value == null) {
+                    return ' N/A ';
+                }
+                else {
+                    return '' + dateToFormat(value, 'DD/MM/YYYY HH:mm:ss');
+                }
+            }
+        },
+        {
+            field: 'createDateDisplay',
+            headerName: 'วันที่ทำรายการ',
+            hide: true,
+            minWidth: 200,
+        },
+        {
+            field: 'documentStatus',
+            headerName: 'สถานะ',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+            cellRenderer: (data) => {
+                const status = data.value;
+                const dropdown = dropdownStatusValues.find(d => d.status === status);
+                return `<span style="width:100px" class="badge bg-${dropdown.color}">${dropdown.value}</span>`;
+            }
+        },
+        {
+            field: 'action',
+            headerName: '',
+            cellStyle: { textAlign: 'center' },
+            minWidth: 60,
+            width: 60,
+            pinned: 'right',
+
+            cellRenderer: function ({ data }) {
+                if (data.documentStatus == "SHIPPING") {
+                    return '<div><i class="fas fa-edit text-warning pointer" data-toggle="tooltip" data-placement="bottom" title="แก้ไข" onClick="openEditModal(' + data.id + ')"> ';
+                }
+                else {
+                    return '<div><i class="fas fa-eye text-secondary pointer" data-toggle="tooltip" data-placement="bottom" title="ตรวจสอบข้อมูล" onClick="openEditModal(' + data.id + ')"> ';
+                }
+            }
+
+        }
+    ];
+</script>
+
+<script>
+    $(document).ready(function () {
+        var gridDiv = document.querySelector('#appTable');
+        new agGrid.Grid(gridDiv, gridOptions);
+        gridOptions.api.sizeColumnsToFit();
+        getItems();
+    });
+
+    // GET
+    function getItems() {
+        $.ajax({
+            url: '@Url.Action("GET_ALL", ViewData["ControllerName"])',
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+                //console.log('getItems', res);
+                var outputData = res.output_data;
+                gridOptions.api.setRowData(outputData);
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+    }
+
+    function onFillterTable() {
+
+        var setTextSearch = document.getElementById('filter-text-box').value;
+        //var setTextMonth = $('#filter-month-select option:selected').val();
+
+        var setValueSearch = setTextSearch;
+
+        console.log(setValueSearch);
+
+        gridOptions.api.setQuickFilter(
+            setValueSearch
+        );
+    }
+
+    // CREATE
+    let submitIsEdit = false;
+
+    $('#alert-product').hide();
+
+    $(function () {
+        $("#form-create").on("submit", function (e) {
+            $('#alert-product').hide();
+
+            var form = $(this)[0];
+            if (submitIsEdit) {
+                cancelInbound();
+                event.preventDefault();
+            }
+            else if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            else if (invalidProduct()) {
+                $('#alert-product').show();
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            else {
+                saveItem();
+                event.preventDefault();
+            }
+            form.classList.add('was-validated');
+        });
+    });
+
+    function invalidProduct() {
+        var ek = $('.productIds').map((_, el) => el.value).get();
+        return ek.some((e, i, arr) => arr.indexOf(e) !== i);
+    }
+
+    function saveItem() {
+        $(':input[type="submit"]').prop('disabled', true);
+        data = getFormData();
+        dataModel = tranformDataToModel(data);
+
+        const rep = $('.repeater').repeaterVal();
+
+        dataModel.item = rep.item.map(i => {
+            return { id: 0, productId: parseInt(i.productId), remark: i.remark, amount: parseInt(i.amount) };
+        })
+
+        //console.log('saveItem', dataModel);
+
+        url = '@Url.Action("INSERT", ViewData["ControllerName"])';
+
+        $.ajax({
+            type: "POST",
+            url: url,
+            data: JSON.stringify(dataModel),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: function (res) {
+                if (res.status === false) {
+                    alertError(res.message);
+                    return;
+                }
+
+                getItems();
+                $('#new-item-modal').modal('hide');
+                alertSuccess();
+            },
+            error: (res) => {
+                alertError(res.message);
+            },
+            complete: () => { $(':input[type="submit"]').prop('disabled', false); }
+
+        });
+    }
+
+    function cancelInbound() {
+        data = getFormData();
+        dataModel = tranformDataToModel(data);
+        //console.log('cancelOrder', dataModel);
+
+        var url = '@Url.Action("SOFT_DELETE", ViewData["ControllerName"])';
+
+        $.ajax({
+            type: "POST",
+            url: url,
+            data: JSON.stringify({ id: dataModel.header.id, remark: dataModel.header.remark }),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: function (res) {
+                if (res.status === false) {
+                    alertError(res.message);
+                    return;
+                }
+
+                getItems();
+                $('#new-item-modal').modal('hide');
+                alertSuccess();
+            },
+            error: (res) => {
+                alertError(res.message);
+            },
+
+        });
+    }
+
+    // CREATE
+    function openCreateModal() {
+        //document.getElementsByName('carNumber')[0].disabled = false;
+        document.getElementsByName('shippingDate')[0].disabled = false;
+        document.getElementsByName('remark')[0].disabled = false;
+        clearForm();
+        openFormModal({ isEdit: false })
+        $('.form-create').show();
+        $('.form-update').hide();
+    }
+
+    function openEditModal(id) {
+        clearForm();
+        $.ajax({
+            type: "POST",
+            url: '@Url.Action("DETAIL", ViewData["ControllerName"])?id=' + id,
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+                //console.log('getIDetail', res);
+                setForm(res);
+
+                const status = res.documentStatus;
+                const dropdown = dropdownStatusValues.find(d => d.status === status);
+                $('#badge-status').html(`<span class="badge bg-${dropdown.color} w-100">${dropdown.value}</span>`);
+                openFormModal({ isEdit: true })
+            },
+            error: (res) => {
+                alertError(res.message);
+            },
+        });
+
+        $.ajax({
+            type: "POST",
+            url: '@Url.Action("GET_ITEM", ViewData["ControllerName"])?headerId=' + id,
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+                //console.log('getItem', res);
+                if (!res) {
+                    return;
+                }
+
+                const products = res;
+                $('.form-update-products').html('');
+                products.forEach((p) => {
+                    $('.form-update-products').append(`
+                                                         <div class="row">
+                                                    <div class="col-5">${p.productName} ( ขนาด : ${p.productDescription} สี ${p.productColor})</div>
+                                                <div class="col-2">${p.amount}</div>
+                                                <div class="col-3">${p.remark}</div>
+                                            </div>`);
+                })
+            },
+            error: (res) => {
+                alertError(res.message);
+            },
+        });
+    }
+
+    // DELETE
+    function clickRowDelete(id) {
+        alertConfirm(deleteItem, id);
+    }
+
+    function deleteItem(id) {
+
+        $.ajax({
+            type: "POST",
+            url: '@Url.Action("DELETE", ViewData["ControllerName"])?id=' + id,
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+
+                if (res.status) {
+                    getItems();
+                    alertSuccess();
+                }
+                else {
+                    alertError(res.message);
+                }
+
+
+            },
+            error: (res) => {
+                alertError(res.message);
+            },
+        });
+    }
+
+    function clearForm() {
+        $('#form-create').removeClass('was-validated')
+        document.getElementsByName('id')[0].value = "";
+        document.getElementById("form-create").reset();
+        $repeater.setList([
+            {
+                'productId': null,
+                'amount': null,
+                'remark': '',
+            },
+        ]);
+    }
+
+
+    function openFormModal({ isEdit }) {
+        submitIsEdit = isEdit;
+        if (isEdit) {
+            $('#form-create-title').text('ตรวจสอบรายการ ');
+            $('#form-create-by').show()
+            $('#submit-add').hide()
+        }
+        else {
+            $('#form-create-title').text('เพิ่มรายการ ');
+            $('#form-create-by').hide()
+            $('#submit-update').hide()
+            $('#submit-add').show()
+        }
+
+        var modalCreate = new bootstrap.Modal(document.getElementById('new-item-modal'), {
+            keyboard: false
+        })
+        modalCreate.show();
+    }
+
+    const gridOptions = {
+        pagination: true,
+        paginationPageSize: 20,
+        paginationAutoPageSize: true,
+        columnDefs,
+        defaultColDef: {
+            flex: 1,
+            minWidth: 100,
+            sortable: true,
+            resizable: true,
+            floatingFilter: true,
+        },
+        autoGroupColumnDef: {
+            minWidth: 100,
+        },
+        suppressDragLeaveHidesColumns: true
+    };
+
+    function onExportExcel() {
+        gridOptions.api.exportDataAsCsv();
+    }
+
+    function tranformDataToModel(data) {
+        model.header.id = data.id;
+        model.header.carNumber = data.carNumber;
+        model.header.shippingDate = data.shippingDate;
+        model.header.remark = data.remark;
+        model.header.shippingValue = data.shippingValue;
+        return model;
+    }
+
+    function clipboard(value) {
+        //console.log('copy text is ' + value);
+
+        navigator.clipboard.writeText(value);
+
+        toastAlert('success','Success', 'Copied: ' + value + '👋');
+
+    }
+
+    getDropdownShippings();
+
+    function getDropdownShippings() {
+        $.ajax({
+            url: '@Url.Action("GET_ALL", "MasterShipping")',
+            //data: { vendorId },
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+
+                //console.log('getDropdownShippings', res.output_data);
+
+                if (res.output_data != null) {
+                    res.output_data.forEach((d) => {
+                        $('.shippingValue').append(`<option value="${d.value}">${d.value}</option>`);
+                    })
+                }
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+
+    }
+
+function changeLbText() {
+    var currentValue = document.getElementsByName('shippingValue')[0].value;
+    
+    //console.log(currentValue);
+
+    document.getElementsByName('carNumber')[0].disabled = false;
+
+    if (currentValue == "จัดส่งด้วยตนเอง") {
+        $('#lbInboundInformation').text('ทะเบียนรถ');
+    }
+    else{
+        $('#lbInboundInformation').text('Tracking no.');
+    }
+
+    if(currentValue == null || currentValue == ''){
+        $('#lbInboundInformation').text('กรุณาเลือกช่องทางการจัดส่ง . . .');
+        document.getElementsByName('carNumber')[0].disabled = true;
+        document.getElementsByName('carNumber')[0].value = '';
+    }
+}
+
+
+</script>

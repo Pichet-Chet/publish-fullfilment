@@ -1,0 +1,607 @@
+﻿@{
+    Layout = "~/Views/Shared/Template/_MasterScript.cshtml";
+}
+
+<script>
+    let model = {
+        productId: 0,
+        productSku: null,
+        productName: null,
+        productDescription: null,
+        productColor: null,
+        vendorId: 0,
+        productTypeId: 0,
+        vendorSku: null,
+        productHeight: null,
+        productWidth: null,
+        productDimension: null,
+        productWeight: null,
+        productLength: null,
+        isActive: false,
+    }
+
+    function getFormData() {
+
+        let formData = new FormData(document.getElementById('form-create'));
+
+        const data = {};
+        formData.forEach((value, key) => (data[key] = value));
+
+        if (!data.productId) { data.productId = 0; }
+
+        data.productId = parseInt(data.productId);
+        data.vendorId = parseInt(data.vendorId);
+        data.isActive = Boolean(data.isActive);
+
+        return data;
+    }
+
+    function disabledForm({ isEdit }) {
+        if (isEdit) {
+            document.getElementsByName('productSku')[0].disabled = true;
+            document.getElementsByName('vendorSku')[0].disabled = true;
+        }
+        else {
+            document.getElementsByName('productSku')[0].disabled = true;
+            document.getElementsByName('vendorSku')[0].disabled = false;
+
+        }
+    }
+
+    function setForm(data) {
+        document.getElementsByName('productId')[0].value = data.productId;
+        document.getElementsByName('productSku')[0].value = data.productSku;
+        document.getElementsByName('productName')[0].value = data.productName;
+        document.getElementsByName('productDescription')[0].value = data.productDescription;
+        document.getElementsByName('productColor')[0].value = data.productColor;
+        document.getElementsByName('vendorId')[0].value = data.vendorId;
+        document.getElementsByName('productTypeId')[0].value = data.productTypeId;
+        document.getElementsByName('vendorSku')[0].value = data.vendorSku;
+        document.getElementsByName('productHeight')[0].value = data.productHeight;
+        document.getElementsByName('productWidth')[0].value = data.productWidth;
+        document.getElementsByName('productDimension')[0].value = data.productDimension;
+        document.getElementsByName('productWeight')[0].value = data.productWeight;
+        document.getElementsByName('productLength')[0].value = data.productLength;
+        document.getElementsByName('isActive')[0].checked = data.isActive;
+
+        document.getElementById('form-create-create-by').innerText = data.createBy;
+        document.getElementById('form-create-create-date').innerText = dateToFormat(data.createDate);
+        document.getElementById('form-create-update-by').innerText = data.updateBy;
+        document.getElementById('form-create-update-date').innerText = dateToFormat(data.updateDate);
+    }
+
+    const role = document.getElementById('user-info-role-name').value;
+    const vendorId = document.getElementById('user-info-vendor-id').value;
+
+    let columnDefs = [];
+
+
+
+
+
+    if (role === 'VENDOR' || role === 'SALE') {
+        columnDefs = [
+            {
+                field: 'productSku',
+                headerName: 'SKU',
+                filter: 'agTextColumnFilter',
+                minWidth: 200,
+                cellRenderer: function ({ value }) {
+                    return '<div> ' + value + ' <i class="fas fa-copy text-secondary" data-toggle="tooltip" data-placement="bottom" title="Copy" style="cursor: pointer;" onClick="clipboard(\'' + value + '\')"> ';
+                }
+            },
+            {
+                field: 'productTypeName',
+                headerName: 'ประเภทสินค้า',
+                filter: 'agTextColumnFilter',
+                minWidth: 200,
+            },
+            {
+                field: 'productName',
+                headerName: 'ชื่อสินค้า',
+                filter: 'agTextColumnFilter',
+                minWidth: 200,
+            },
+            {
+                field: 'productDescription',
+                headerName: 'รายละเอียด',
+                filter: 'agTextColumnFilter',
+                minWidth: 200,
+            },
+            {
+                field: 'productWidth',
+                headerName: 'ความกว้าง',
+                filter: 'agTextColumnFilter',
+                minWidth: 200,
+            },
+            {
+                field: 'productHeight',
+                headerName: 'ความสูง',
+                filter: 'agTextColumnFilter',
+                minWidth: 200,
+            },
+            {
+                field: 'productLength',
+                headerName: 'ความยาว',
+                filter: 'agTextColumnFilter',
+                minWidth: 200,
+            },
+            {
+                field: 'productColor',
+                headerName: 'สี',
+                filter: 'agTextColumnFilter',
+                minWidth: 200,
+            },
+            {
+                field: 'isActive',
+                headerName: 'เปิด - ปิด',
+                filter: 'agTextColumnFilter',
+                minWidth: 200,
+                cellRenderer: function ({ value }) {
+                    if (value == true) {
+                        return ' <span class="badge bg-warning w-50">ACTIVE</span>';
+                    }
+                    else {
+                        return ' <span class="badge bg-secondary w-50">DISABLE</span>';
+                    }
+                }
+            },
+
+            {
+                field: 'action',
+                headerName: '',
+                cellStyle: { textAlign: 'center' },
+                minWidth: 50,
+                width: 50,
+                pinned: 'right',
+                cellRenderer: function (params) {
+                    return `
+                        <div class="text-primary">
+                            <i class="fas fa-file-image" data-toggle="tooltip" data-placement="bottom" title="เพิ่มรูปภาพ" onClick="showImageAdd('${params.data.productId}')">
+                            </div>`;
+                }
+            },
+
+            {
+                field: 'action',
+                headerName: '',
+                cellStyle: { textAlign: 'center' },
+                minWidth: 50,
+                width: 50,
+                pinned: 'right',
+                cellRenderer: function (params) {
+                    return `
+                        <div class="text-warning">
+                            <i class="fas fa-print" data-toggle="tooltip" data-placement="bottom" title="ปริ้น" onClick="showBarcode('${params.data.productSku}')">
+                            </div>`;
+                }
+            },
+
+            {
+                field: 'action',
+                headerName: '',
+                cellStyle: { textAlign: 'center' },
+                minWidth: 50,
+                width: 50,
+                pinned: 'right',
+                cellRenderer: function (params) {
+                    return '<div><i class="fas fa-edit" data-toggle="tooltip" data-placement="bottom" title="แก้ไข" onClick="openEditModal(' + params.data.productId + ')"> ';
+                }
+            }
+
+        ];
+    }
+
+    else {
+        columnDefs = [
+            {
+                field: 'vendorName',
+                headerName: 'บริษัท - คู่ค้า',
+                filter: 'agTextColumnFilter',
+                minWidth: 200,
+            },
+            {
+                field: 'productSku',
+                headerName: 'SKU',
+                filter: 'agTextColumnFilter',
+                minWidth: 200,
+                cellRenderer: function ({ value }) {
+                    return '<div> ' + value + ' <i class="fas fa-copy text-secondary" data-toggle="tooltip" data-placement="bottom" title="Copy" style="cursor: pointer;" onClick="clipboard(\'' + value + '\')"> ';
+                }
+            },
+            {
+                field: 'productTypeName',
+                headerName: 'ประเภทสินค้า',
+                filter: 'agTextColumnFilter',
+                minWidth: 200,
+            },
+            {
+                field: 'productName',
+                headerName: 'ชื่อสินค้า',
+                filter: 'agTextColumnFilter',
+                minWidth: 200,
+            },
+            {
+                field: 'productDescription',
+                headerName: 'รายละเอียด',
+                filter: 'agTextColumnFilter',
+                minWidth: 200,
+            },
+            {
+                field: 'productWidth',
+                headerName: 'ความกว้าง',
+                filter: 'agTextColumnFilter',
+                minWidth: 200,
+            },
+            {
+                field: 'productHeight',
+                headerName: 'ความสูง',
+                filter: 'agTextColumnFilter',
+                minWidth: 200,
+            },
+            {
+                field: 'productLength',
+                headerName: 'ความยาว',
+                filter: 'agTextColumnFilter',
+                minWidth: 200,
+            },
+            {
+                field: 'productColor',
+                headerName: 'สี',
+                filter: 'agTextColumnFilter',
+                minWidth: 200,
+            },
+            {
+                field: 'isActive',
+                headerName: 'เปิด - ปิด',
+                filter: 'agTextColumnFilter',
+                minWidth: 200,
+                cellRenderer: function ({ value }) {
+                    if (value == true) {
+                        return ' <span class="badge bg-warning w-50">ACTIVE</span>';
+                    }
+                    else {
+                        return ' <span class="badge bg-secondary w-50">DISABLE</span>';
+                    }
+                }
+            },
+
+            {
+                field: 'action',
+                headerName: '',
+                cellStyle: { textAlign: 'center' },
+                minWidth: 50,
+                width: 50,
+                pinned: 'right',
+                cellRenderer: function (params) {
+                    return `
+                        <div class="text-primary">
+                            <i class="fas fa-file-image" data-toggle="tooltip" data-placement="bottom" title="เพิ่มรูปภาพ" onClick="showImageAdd('${params.data.productId}')">
+                            </div>`;
+                }
+            },
+
+            {
+                field: 'action',
+                headerName: '',
+                cellStyle: { textAlign: 'center' },
+                minWidth: 50,
+                width: 50,
+                pinned: 'right',
+                cellRenderer: function (params) {
+                    return `
+                        <div class="text-warning">
+                            <i class="fas fa-print" data-toggle="tooltip" data-placement="bottom" title="ปริ้น" onClick="showBarcode('${params.data.productSku}')">
+                            </div>`;
+                }
+            },
+
+            {
+                field: 'action',
+                headerName: '',
+                cellStyle: { textAlign: 'center' },
+                minWidth: 50,
+                width: 50,
+                pinned: 'right',
+                cellRenderer: function (params) {
+                    return '<div><i class="fas fa-edit" data-toggle="tooltip" data-placement="bottom" title="แก้ไข" onClick="openEditModal(' + params.data.productId + ')"> ';
+                }
+            }
+
+        ];
+    }
+
+
+    getVendors(role === 'VENDOR' || role === 'SALE' ? vendorId : '');
+
+    function getVendors(id = '') {
+        $.ajax({
+            url: '@Url.Action("GET_ALL", "MasterVendor")?vendorId=' + id,
+            data: { isActive: true },
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+                res.output_data.forEach((d) => {
+                    $('[name="vendorDisplay"]').append(`<option value="${d.vendorName}">${d.vendorName}</option>`);
+                })
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+    }
+
+
+    getDropdownProductType();
+
+    function getDropdownProductType() {
+        $.ajax({
+            url: '@Url.Action("GET_ALL", "MasterProductType")',
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+                res.output_data.forEach((d) => {
+                    $('[name="productTypeId"]').append(`<option value="${d.id}">${d.value}</option>`);
+                })
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+
+    }
+
+    function bindingToSku() {
+        document.getElementsByName('productSku')[0].value = document.getElementsByName('vendorSku')[0].value;
+    }
+
+    const checkbox = document.getElementById('checkboxFlagKeySku')
+
+    checkbox.addEventListener('change', (event) => {
+
+        //console.log(checkbox.checked);
+
+        if (checkbox.checked) {
+            document.getElementsByName('productSku')[0].disabled = false;
+            $("[name='productSku']").val('');
+        }
+        else {
+            document.getElementsByName('productSku')[0].disabled = true;
+            document.getElementsByName('productSku')[0].value = document.getElementsByName('vendorSku')[0].value;
+        }
+    })
+
+
+    function showImageAdd(id) {
+        $('#showImageProductModal').modal('show');
+
+        $('#renderImageProduct').html('');
+
+        $('#txtValueProductId').val(id);
+
+        $.ajax({
+            url: '@Url.Action("GetFile", "MasterProduct")',
+            data: { productId: parseInt(id) },
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+
+                if (res.status) {
+                    var renderData = "";
+
+                    res.output_data.forEach((d) => {
+
+                        renderData += `
+                                            <div class="col-6 col-md-4 col-lg-3 col-xl-2" >
+                                                <div class="card">
+                                                    <div class="ratio ratio-1x1">
+                                                        <img class="card-img-top ratio ratio-1x1" src='data:image/jpeg;base64,${d.base64}' alt="Card image cap" />
+                                                    </div>
+                                                    <div class="card-body">
+                                                    <hr/>
+                                                    <center>
+                                                        <a onclick="deleteImage('${d.name}')" class="btn btn-outline-danger text-danger">ลบรูปภาพ</a>
+                                                        </center>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        `;
+                    });
+
+                    $('#renderImageProduct').html(renderData);
+
+                }
+
+
+
+
+            },
+            error: (res) => {
+                //alertError(res.statusText);
+            },
+        });
+    }
+
+    function AddImage() {
+
+        $('#imageProductModal').modal('show');
+
+        document.getElementById("formUpdateImageProduct").reset();
+
+        $("#file-update-product").fileinput({
+            'theme': 'fa5',
+            //'theme': 'bs5',
+            //'theme': 'explorer-fa5',
+
+            uploadAsync: true,
+            showUpload: false,
+            showRemove: true,
+            showPreview: true,
+            maxFileSize: 2000,
+            browseOnZoneClick: true,
+            browseIcon: '<i class="fa fa-folder-open"></i> ',
+            removeIcon: '<i class="fa fa-trash"></i> ',
+            uploadUrl: "/file-upload-batch/2",
+            previewFileIcon: '<i class="fa fa-file"></i>',
+            layoutTemplates: {
+                actions: '<div class="file-actions">\n' +
+                    '    <div class="file-footer-buttons">\n' +
+                    '        {download} {delete} {zoom} {other}' +
+                    '    </div>\n' +
+                    '    {drag}\n' +
+                    '    <div class="clearfix"></div>\n' +
+                    '</div>',
+                actionDelete: '<button type="button" class="kv-file-remove {removeClass}" title="{removeTitle}"{dataUrl}{dataKey}>{removeIcon}</button>\n',
+                actionDownload: '<button type="button" class="{downloadClass}" title="{downloadTitle}" data-url="{downloadUrl}" data-caption="{caption}">{downloadIcon}</button>\n',
+                actionRotate: '<button type="button" class="kv-file-rotate {rotateClass}" title="{rotateTitle}">{rotateIcon}</button>\n',
+                actionZoom: '<button type="button" class="kv-file-zoom {zoomClass}" title="{zoomTitle}">{zoomIcon}</button>',
+                actionDrag: '<span class="file-drag-handle {dragClass}" title="{dragTitle}">{dragIcon}</span>'
+            },
+        });
+    }
+
+    function UploadData() {
+
+        var inputfileupload = $('#file-update-product').val();
+
+
+        if ((inputfileupload != '')) {
+            var getProductId = parseInt($('#txtValueProductId').val());
+            var formdata = new FormData(); //FormData object
+            var fileInput = document.getElementById('file-update-product');
+
+            for (i = 0; i < fileInput.files.length; i++) {
+                formdata.append(fileInput.files[i].name, fileInput.files[i]);
+            }
+
+            var xhr = new XMLHttpRequest();
+            var hostname = window.location.hostname;
+
+
+            var urllink = '@Url.Action("UploadFile","MasterProduct")' + '?productId=' + getProductId;
+            xhr.open('POST', urllink);
+            xhr.send(formdata);
+            xhr.onreadystatechange = function () {
+
+                var resData = JSON.parse(xhr.responseText);
+
+                //console.log(resData.status);
+
+                if (resData.status == true) {
+                    $('#imageProductModal').modal('hide');
+
+                    //console.log($('#txtValueProductId').val());
+
+                    $('#renderImageProduct').html('');
+
+
+                    $.ajax({
+                        url: '@Url.Action("GetFile", "MasterProduct")',
+                        data: { productId: parseInt($('#txtValueProductId').val()) },
+                        contentType: "application/json; charset=utf-8",
+                        dataType: "json",
+                        success: (res) => {
+
+                            var renderData = "";
+
+                            res.output_data.forEach((d) => {
+
+                                renderData += `
+                                            <div class="col-6 col-md-4 col-lg-3 col-xl-2" >
+                                                <div class="card">
+                                                    <div class="ratio ratio-1x1">
+                                                        <img class="card-img-top ratio ratio-1x1" src='data:image/jpeg;base64,${d.base64}' alt="Card image cap" />
+                                                    </div>
+                                                    <div class="card-body">
+                                                    <hr/>
+                                                    <center>
+                                                        <a onclick="deleteImage('${d.name}')" class="btn btn-outline-danger text-danger">ลบรูปภาพ</a>
+                                                        </center>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        `;
+
+                            });
+
+                            $('#renderImageProduct').html(renderData);
+
+                        },
+                        error: (res) => {
+                            alertError(res.statusText);
+                        },
+                    });
+
+
+                }
+                else {
+                    alertError(resData.message);
+                }
+            }
+        }
+        else {
+
+
+        }
+    }
+
+
+    function deleteImage(name) {
+
+        //console.log(name)
+
+        $.ajax({
+            type: "POST",
+            url: '@Url.Action("DeleteFile", "MasterProduct")?filename=' + name + '&productId=' + parseInt($('#txtValueProductId').val()),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+                $('#renderImageProduct').html('');
+
+
+                $.ajax({
+                    url: '@Url.Action("GetFile", "MasterProduct")',
+                    data: { productId: parseInt($('#txtValueProductId').val()) },
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    success: (res) => {
+                        if (res.status) {
+
+                            var renderData = "";
+
+                            res.output_data.forEach((d) => {
+
+                                renderData += `
+                                            <div class="col-6 col-md-4 col-lg-3 col-xl-2" >
+                                                <div class="card">
+                                                    <div class="ratio ratio-1x1">
+                                                        <img class="card-img-top ratio ratio-1x1" src='data:image/jpeg;base64,${d.base64}' alt="Card image cap" />
+                                                    </div>
+                                                    <div class="card-body">
+                                                    <hr/>
+                                                    <center>
+                                                        <a onclick="deleteImage('${d.name}')" class="btn btn-outline-danger text-danger">ลบรูปภาพ</a>
+                                                        </center>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        `;
+
+                            });
+                        }
+
+                        $('#renderImageProduct').html(renderData);
+
+                    },
+                    error: (res) => {
+                        alertError(res.statusText);
+                    },
+                });
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+    }
+
+</script>

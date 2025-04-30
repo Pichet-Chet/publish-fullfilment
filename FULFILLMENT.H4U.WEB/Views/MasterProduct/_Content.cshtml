@@ -1,0 +1,111 @@
+﻿@{
+    Layout = "~/Views/Shared/Template/_Master.cshtml";
+}
+
+<!-- Input Start-->
+<input type="hidden" class="form-control" name="productId" />
+<input type="hidden" class="form-control" name="vendorId" />
+
+<div class="row">
+
+    <!-- IF ADMIN -->
+    <div class="col-lg-12">
+        <div class="mb-1">
+            <label class="form-label">บริษัท - คู่ค้า</label>
+            <select class="form-select" name="vendorDisplay" disabled>
+            </select>
+        </div>
+    </div>
+    <!-- IF ADMIN -->
+
+    <div class="col-lg">
+        <div class="mb-1">
+            <label class="form-label required">SKU (ระบบ Here4U)<span> ( <input type="checkbox" id="checkboxFlagKeySku" /> แก้ไขด้วตนเอง ) </span> </label>
+            <input type="text" class="form-control" name="productSku" required />
+        </div>
+    </div>
+
+    <!-- IF ADMIN -->
+    <div class="col-lg">
+        <div class="mb-1">
+            <label class="form-label">SKU (บริษัท-คู่ค้า)</label>
+            <input type="text" class="form-control" name="vendorSku" onkeydown="bindingToSku()" onkeyup="bindingToSku()" />
+        </div>
+    </div>
+    <!-- IF ADMIN -->
+
+    <div class="col-lg-6">
+        <div class="mb-1">
+            <label class="form-label">ประเภทสินค้า</label>
+            <select class="form-select" name="productTypeId" required>
+                <option value="">--- กรุณาเลือกข้อมูล ---</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="mb-1">
+            <label class="form-label required">ชื่อสินค้า</label>
+            <input type="text" class="form-control" name="productName" required />
+        </div>
+    </div>
+</div>
+
+
+<div class="row">
+    <div class="col-lg-12">
+        <div class="mb-1">
+            <label class="form-label">รายละเอียด</label>
+            <input type="text" class="form-control" name="productDescription" />
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-4">
+        <div class="mb-1">
+            <label class="form-label">สี</label>
+            <input type="text" class="form-control" name="productColor" />
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="mb-1">
+            <label class="form-label required">ความสูง</label>
+            <input type="text" class="form-control" name="productHeight" onkeypress="return onlyNumberKey(event)" required />
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="mb-1">
+            <label class="form-label required">ความกว้าง</label>
+            <input type="text" class="form-control" name="productWidth" onkeypress="return onlyNumberKey(event)" required />
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="mb-1">
+            <label class="form-label required">ความยาว</label>
+            <input type="text" class="form-control" name="productLength" onkeypress="return onlyNumberKey(event)" required />
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="mb-1">
+            <label class="form-label">สัดส่วน</label>
+            <input type="text" class="form-control" name="productDimension" disabled />
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="mb-1">
+            <label class="form-label required">น้ำหนัก</label>
+            <input type="text" class="form-control" name="productWeight" onkeypress="return onlyNumberKey(event)" required />
+        </div>
+    </div>
+</div>
+
+<div class="mb-1">
+    <div class="form-check">
+        <input type="checkbox" class="form-check-input" name="isActive" id="isActive">
+        <label class="form-check-label" for="isActive">เปิด - ปิด</label>
+    </div>
+</div>
+<!-- Input End-->

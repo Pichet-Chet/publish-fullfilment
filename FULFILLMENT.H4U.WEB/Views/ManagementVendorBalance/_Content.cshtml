@@ -1,0 +1,23 @@
+﻿@{
+    Layout = "~/Views/Shared/Template/_Master.cshtml";
+}
+
+<!-- Input Start-->
+<input type="hidden" class="form-control" name="vendorId" />
+
+<div class="row">
+    <div class="col-lg-4">
+        <div class="mb-1">
+            <label class="form-label required">รหัสบริษัท - คู่ค้า</label>
+            <input type="text" class="form-control" name="vendorCode" required disabled />
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="mb-1">
+            <label class="form-label required">ยอดเครดิตคงเหลือ</label>
+            <input type="number" class="form-control" name="balance" required />
+        </div>
+    </div>
+</div>
+
+<!-- Input End-->

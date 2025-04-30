@@ -1,0 +1,251 @@
+﻿<script>
+    let PO_PENDING_LIST = [];
+    let VENDORS = [];
+    let BOXS = [];
+    let BINS = [];
+
+    // START GET MASTER
+    getBoxs();
+    getBins();
+    getVendors();
+
+    function getBoxs() {
+        $.ajax({
+            url: '@Url.Action("GET_ALL", "MasterBox")',
+            // data: { isActive: true, binType: 'INVENTORY' },
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+                //console.log('getBoxs', res.output_data);
+                BOXS = res.output_data;
+                setDropdownBoxs();
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+    }
+
+    function setDropdownBoxs() {
+        $('.boxId').html(`<option value="">--- กรุณาเลือกข้อมูล ---</option>`);
+        BOXS.forEach((d) => {
+            $('.boxId').append(`<option value="${d.id}">${d.name} : ${d.size}</option>`);
+        })
+    }
+
+    function getVendors() {
+        $.ajax({
+            url: '@Url.Action("GET_ALL", "MasterVendor")',
+            data: { isActive: true },
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+                //console.log('getVendors', res.output_data);
+                VENDORS = res.output_data;
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+    }
+
+    function getBins() {
+        $.ajax({
+            url: '@Url.Action("GET_ALL", "MasterBin")',
+            data: { binType: 'PACKING' },
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+                //console.log('getBins', res.output_data);
+                BINS = res.output_data;
+                createPendingTable();
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+    }
+
+    function findBin(id) {
+        return BINS.find(x => x.binId == id);
+    }
+
+    function findVendor(id) {
+        return VENDORS.find(x => x.id == id);
+    }
+    // END GET MASTER
+
+    // START PENDING SCRIPT
+    let pending = {
+        gridDiv: null,
+        gridOptions: {},
+        columnDefs: {},
+    }
+
+
+    pending.columnDefs = [
+        {
+            field: 'documentNo',
+            headerName: 'เลขที่เอกสาร (PL)',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+            cellRenderer: function({ value }) {
+                return '<div> ' + value + ' <i class="fas fa-copy text-secondary" data-toggle="tooltip" data-placement="bottom" title="Copy" style="cursor: pointer;" onClick="clipboard(\'' + value + '\')"> ';
+            }
+        },
+        {
+            field: 'purchaseOrderDocument',
+            headerName: 'เลขที่เอกสาร (PO)',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+            cellRenderer: function({ value }) {
+                return '<div> ' + value + ' <i class="fas fa-copy text-secondary" data-toggle="tooltip" data-placement="bottom" title="Copy" style="cursor: pointer;" onClick="clipboard(\'' + value + '\')"> ';
+            }
+        },
+        {
+            field: 'vendorName',
+            headerName: 'บริษัท - คู่ค้า',
+            filter: 'agTextColumnFilter',
+            minWidth: 20,
+        },
+        {
+            field: 'binId',
+            headerName: 'Bin (Dev mode only)',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+            cellRenderer: ({ value }) => {
+                if (value == null) {
+                    return '';
+                }
+                else {
+                    const bin = findBin(value)
+                    if (bin.binName == null || bin.binName === "undefined") {
+                        return '';
+                    }
+                    //console.log(bin);
+                    return '<div> ' + bin.binName + ' <i class="fas fa-copy text-secondary" data-toggle="tooltip" data-placement="bottom" title="Copy" style="cursor: pointer;" onClick="clipboard(\'' + bin.binName + '\')"> ';
+                }
+            }
+        },
+        {
+            field: 'createBy',
+            headerName: 'ผู้ทำรายการ',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'createDate',
+            headerName: 'วันที่ทำรายการ',
+            filter: 'agTextColumnFilter',
+            filterParams: {
+                caseSensitive: true,
+                textMatcher: (data) => {
+                    return dateToFormat(data.value).indexOf(data.filterText) > -1;
+                }
+            },
+            minWidth: 200,
+            cellRenderer: function ({ value }) {
+                if (value == null) {
+                    return ' N/A ';
+                }
+                else {
+                    return '' + dateToFormat(value, 'DD/MM/YYYY HH:mm:ss');
+                }
+            }
+        },
+        {
+            field: 'documentStatus',
+            headerName: 'สถานะ',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+            cellRenderer: function({ value }) {
+                if (value == "PENDING") {
+                    return '<span class="badge bg-warning w-50"> PENDING </span>';
+                }
+                else if (value == "ARRIVED") {
+                    return '<span class="badge bg-success w-50"> ARRIVED </span>';
+                }
+                else if (value == "PICKLIST") {
+                    return '<span class="badge bg-info w-50"> PICKED </span>';
+                }
+                else if (value == "CANCEL") {
+                    return '<span class="badge bg-danger w-50"> CANCEL </span>';
+                }
+                else if (value == "SHIPPED") {
+                    return '<span class="badge bg-success w-50"> SHIPPED </span>';
+                }
+                else if (value == "SUCCESS") {
+                    return '<span class="badge bg-success w-50"> SUCCESS </span>';
+                }
+                else {
+                    return '<span class="badge bg-primary w-50"> ' + value + ' </span>';
+                }
+            }
+        },
+    ];
+
+    pending.gridOptions = {
+        pagination: true,
+        paginationPageSize: 20,
+        paginationAutoPageSize: true,
+        columnDefs: pending.columnDefs,
+        defaultColDef: {
+            flex: 1,
+            minWidth: 100,
+            sortable: true,
+            resizable: true,
+            floatingFilter: true,
+        },
+        autoGroupColumnDef: {
+            minWidth: 100,
+        },
+        suppressDragLeaveHidesColumns: true,
+        suppressHorizontalScroll: true,
+    };
+
+    function createPendingTable() {
+        pending.gridDiv = document.querySelector('#appTablePending');
+        new agGrid.Grid(pending.gridDiv, pending.gridOptions);
+        pending.gridOptions.api.sizeColumnsToFit();
+        getPendings();
+    }
+
+    function onPendingFillterTable() {
+        pending.gridOptions.api.setQuickFilter(
+            document.getElementById('pending-filter-text-box').value
+        );
+    }
+
+    function onPendingExportExcel() {
+        pending.gridOptions.api.exportDataAsCsv();
+    }
+
+    // GET
+    function getPendings() {
+        $.ajax({
+            url: '@Url.Action("GET_ALL", "WarehousePicklist")',
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+                //console.log('getPendings', res);
+                PO_PENDING_LIST = res.output_data;
+                pending.gridOptions.api.setRowData(PO_PENDING_LIST);
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+    }
+
+    // END PENDING SCRIPT
+
+
+    function clipboard(value) {
+        //console.log('copy text is ' + value);
+
+        navigator.clipboard.writeText(value);
+
+        toastAlert('success','Success', 'Copied: ' + value+ '👋');
+    }
+
+</script>

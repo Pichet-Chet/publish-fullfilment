@@ -1,0 +1,100 @@
+﻿@{ Layout = "~/Views/Shared/Template/_Master.cshtml"; }
+
+<!-- Input Start-->
+<input type="hidden" class="form-control" name="vendorId" />
+
+<div class="row">
+    @*<div class="col-lg-4">
+        <div class="mb-1">
+            <label class="form-label required">Prefix </label>
+            <input type="text" class="form-control" name="prefixName" required />
+        </div>
+    </div>*@
+    <div class="col-lg-4">
+        <div class="mb-1">
+            <label class="form-label required">รหัสบริษัท - คู่ค้า </label>
+            <input type="text" class="form-control" name="vendorCode" required />
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="mb-1">
+            <label class="form-label required">ชื่อบริษัท - คู่ค้า</label>
+            <input type="text" class="form-control" name="vendorName" required />
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-4">
+        <div class="mb-1">
+            <label class="form-label required">เลขที่ผู้เสียภาษี</label>
+            <input type="text" class="form-control" name="taxId" onkeypress="return onlyNumberKey(event)" required />
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="mb-1">
+            <label class="form-label required">ชื่อผู้ติดต่อ</label>
+            <input type="text" class="form-control" name="contactName" required />
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="mb-1">
+            <label class="form-label required">เบอร์โทร</label>
+            <input type="text" class="form-control" name="contactTel" onkeypress="return onlyNumberKey(event)" required />
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-12">
+        <div class="mb-1">
+            <label class="form-label required">ที่อยู่</label>
+            <input type="text" class="form-control" name="contactAddress" required />
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-4">
+        <div class="mb-1">
+            <label class="form-label">Line ID</label>
+            <input type="text" class="form-control" name="lineId" />
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="mb-1">
+            <label class="form-label required">Email</label>
+            <input type="email" class="form-control" name="email" required />
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="mb-1">
+            <label class="form-label">Website</label>
+            <input type="text" class="form-control" name="website" />
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="mb-1">
+            <label class="form-label required">Secret Key</label>
+            <div class="input-group">
+                <input type="text" class="form-control" name="serectKey" aria-describedby="button-serectkey" required />
+                <button class="btn btn-outline-primary waves-effect" id="button-serectkey" type="button" onclick="genKey()">generate Key</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="mb-1">
+            <div class="form-check">
+                <input type="checkbox" class="form-check-input" name="isActive" id="isActive" value="true">
+                <label class="form-check-label" for="isActive">เปิด-ปิด</label>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Input End-->

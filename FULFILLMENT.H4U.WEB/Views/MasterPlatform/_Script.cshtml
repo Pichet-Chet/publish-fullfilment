@@ -1,0 +1,113 @@
+﻿@{
+    Layout = "~/Views/Shared/Template/_MasterScript.cshtml";
+}
+
+<script>
+    let model = {
+        id: 0,
+        value: "",
+        nameEn: "",
+        nameTh: "",
+        isActive: false,
+        website: "",
+    }
+
+    function getFormData() {
+
+        let formData = new FormData(document.getElementById('form-create'));
+
+        const data = {};
+        formData.forEach((value, key) => (data[key] = value));
+
+        if (!data.id) { data.id = 0; }
+
+        data.id = parseInt(data.id);
+        data.isActive = Boolean(data.isActive);
+
+        return data;
+    }
+
+    function disabledForm({ isEdit }) {
+        if (isEdit) {
+            document.getElementsByName('value')[0].disabled = true;
+        }
+        else {
+            document.getElementsByName('value')[0].disabled = false;
+        }
+    }
+
+    function setForm(data) {
+        document.getElementsByName('id')[0].value = data.id;
+        document.getElementsByName('value')[0].value = data.value;
+        document.getElementsByName('value')[0].disabled = true;
+
+        document.getElementsByName('nameEn')[0].value = data.nameEn;
+        document.getElementsByName('nameTh')[0].value = data.nameTh;
+        document.getElementsByName('isActive')[0].checked = data.isActive;
+        document.getElementsByName('website')[0].value = data.website;
+
+
+        document.getElementById('form-create-create-by').innerText = data.createBy;
+        document.getElementById('form-create-create-date').innerText = dateToFormat(data.createDate);
+        document.getElementById('form-create-update-by').innerText = data.updateBy;
+        document.getElementById('form-create-update-date').innerText = dateToFormat(data.updateDate);
+    }
+
+    let columnDefs = [
+
+        {
+            field: 'value',
+            headerName: 'Value',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+            cellRenderer: function({ value }) {
+                return '<div> ' + value + ' <i class="fas fa-copy text-secondary" data-toggle="tooltip" data-placement="bottom" title="Copy" style="cursor: pointer;" onClick="clipboard(\'' + value + '\')"> ';
+            }
+        },
+        {
+            field: 'nameEn',
+            headerName: 'ชื่อแพลตฟอร์ม (English)',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'nameTh',
+            headerName: 'ชื่อแพลตฟอร์ม (Thai)',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'website',
+            headerName: 'เว็บไซต์',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'isActive',
+            headerName: 'เปิด - ปิด',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+            cellRenderer: function({ value }) {
+                if (value == true) {
+                    return ' <span class="badge bg-warning">ACTIVE</span>';
+                }
+                else {
+                    return ' <span class="badge bg-secondary">DISABLE</span>';
+                }
+            }
+        },
+        {
+            field: 'action',
+            headerName: '#',
+            cellStyle: { textAlign: 'center' },
+            minWidth: 60,
+            width: 60,
+            pinned: 'right',
+            cellRenderer: function({ data }) {
+                return '<div><i class="fas fa-edit" data-toggle="tooltip" data-placement="bottom" title="แก้ไข" style="color:orange; cursor: pointer;" onClick="openEditModal(' + data.id + ')"> ';
+            }
+        }
+    ];
+
+
+</script>

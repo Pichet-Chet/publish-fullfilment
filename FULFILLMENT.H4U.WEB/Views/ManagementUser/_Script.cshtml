@@ -1,0 +1,243 @@
+﻿@{
+    Layout = "~/Views/Shared/Template/_MasterScript.cshtml";
+}
+
+<script>
+    let model = {
+        userId: 0,
+        userName: null,
+        userPassword: null,
+        firstNameTh: null,
+        lastNameTh: null,
+        firstNameEn: null,
+        lastNameEn: null,
+        mobile: null,
+        email: null,
+        isActive: false,
+        venderId: 0,
+        secretKey: null,
+        role: null
+    }
+
+    function disabledForm({ isEdit }) {
+        if (isEdit) {
+
+        }
+        else {
+
+        }
+    }
+
+    function getFormData() {
+
+        let formData = new FormData(document.getElementById('form-create'));
+
+        const data = {};
+        formData.forEach((value, key) => (data[key] = value));
+
+        if (!data.userId) { data.userId = 0; }
+
+        data.userId = parseInt(data.userId);
+        data.venderId = parseInt(data.venderId);
+        data.isActive = Boolean(data.isActive);
+
+        return data;
+    }
+
+    function setForm(data) {
+
+        console.log(data);
+
+        $("[name='userId']").val(data.userId);
+        $("[name='userName']").val(data.userName);
+        $("[name='userPassword']").val(data.userPassword);
+        $("[name='firstNameTh']").val(data.firstNameTh);
+        $("[name='lastNameTh']").val(data.lastNameTh);
+        $("[name='firstNameEn']").val(data.firstNameEn);
+        $("[name='lastNameEn']").val(data.lastNameEn);
+        $("[name='mobile']").val(data.mobile);
+        $("[name='email']").val(data.email);
+        //$("[name='venderId']").val("");
+        $("[name='secretKey']").val(data.secretKey);
+        //$("[name='role']").val("");
+        //$("[name='isActive']").val("");
+
+
+        $("#form-create-create-by").val(data.createBy);
+        $("#form-create-create-date").val(dateToFormat(data.createDate));
+        $("#form-create-update-by").val(data.updateBy);
+        $("#form-create-update-date").val(dateToFormat(data.updateDate));
+
+
+
+        //document.getElementsByName('userId')[0].value = data.userId;
+        //document.getElementsByName('userName')[0].value = data.userName;
+        //document.getElementsByName('userPassword')[0].value = data.userPassword;
+        //document.getElementsByName('firstNameTh')[0].value = data.firstNameTh;
+        //document.getElementsByName('lastNameTh')[0].value = data.lastNameTh;
+        //document.getElementsByName('firstNameEn')[0].value = data.firstNameEn;
+        //document.getElementsByName('lastNameEn')[0].value = data.lastNameEn;
+        //document.getElementsByName('mobile')[0].value = data.mobile;
+        //document.getElementsByName('email')[0].value = data.email;
+        document.getElementsByName('venderId')[0].value = data.venderId;
+        //document.getElementsByName('secretKey')[0].value = data.secretKey;
+        document.getElementsByName('role')[0].value = data.role;
+        document.getElementsByName('isActive')[0].checked = data.isActive;
+
+        //document.getElementById('form-create-create-by').innerText = data.createBy;
+        //document.getElementById('form-create-create-date').innerText = dateToFormat(data.createDate);
+        //document.getElementById('form-create-update-by').innerText = data.updateBy;
+        //document.getElementById('form-create-update-date').innerText = dateToFormat(data.updateDate);
+
+        $('[name="userName"]').attr("disabled", true);
+
+    }
+
+    $('#open-create-modal').click(() => {
+        $('[name="userName"]').attr("disabled", false);
+    });
+
+    let columnDefs = [
+        {
+            field: 'userName',
+            headerName: 'Username',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'firstNameTh',
+            headerName: 'ชื่อ-นามสกุล',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+            cellRenderer: function(params) {
+                return `${params.data.firstNameTh} ${params.data.lastNameTh}`;
+            }
+        },
+        {
+            field: 'firstNameEn',
+            headerName: 'Fullname',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+            cellRenderer: function(params) {
+                return `${params.data.firstNameEn} ${params.data.lastNameEn}`;
+            }
+        },
+        {
+            field: 'email',
+            headerName: 'Email',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'vendorName',
+            headerName: 'บริษัท - คู่ค้า',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'contactTel',
+            headerName: 'เบอร์โทร (บริษัท)',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'mobile',
+            headerName: 'เบอร์โทร',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'role',
+            headerName: 'Role',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+            cellRenderer: function({ value }) {
+                if (value == "PENDING") {
+                    return ' <span class="badge bg-warning w-75">รออนุมัติ</span>';
+                }
+                else {
+                    return ' <span class="badge bg-primary w-75">' + value + '</span>';
+                }
+            }
+        },
+        {
+            field: 'isActive',
+            headerName: 'เปิด - ปิด',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+            cellRenderer: function({ value }) {
+                if (value == true) {
+                    return ' <span class="badge bg-warning w-50">ACTIVE</span>';
+                }
+                else {
+                    return ' <span class="badge bg-secondary w-50">DISABLE</span>';
+                }
+            }
+        },
+        {
+            hide: true,
+            field: 'createBy',
+            headerName: 'สร้างโดย',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+            cellRenderer: function(params) {
+                if (params.data.createBy != "") {
+                    return ' <span class="text text-default"><i class="fa fa-clock" title="' + params.data.createDate + '"></i> ' + params.data.createBy + ' </span>';
+                }
+                else {
+                    return ' <span class="text text-default">' + value + '</span>';
+                }
+            }
+        },
+        {
+            field: 'action',
+            headerName: '#',
+            cellStyle: { textAlign: 'center' },
+            width: 60,
+            pinned: 'right',
+            cellRenderer: function({ data }) {
+                return '<div><i class="fas fa-edit text-warning pointer" data-toggle="tooltip" data-placement="bottom" title="แก้ไข" onClick="openEditModal(' + data.userId + ')"> ';
+            }
+        }
+       
+    ];
+
+    getDropdownRole();
+
+    function getDropdownRole() {
+        $.ajax({
+            url: '@Url.Action("GET_ALL", "ManagementRoles")',
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+                res.output_data.forEach((d) => {
+                    $('[name="role"]').append(`<option value="${d.value}">${d.name}</option>`);
+                })
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+
+    }
+
+    getVendors();
+
+    function getVendors() {
+        $.ajax({
+            data: { isActive: true },
+            url: '@Url.Action("GET_ALL", "MasterVendor")',
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+                res.output_data.forEach((d) => {
+                    $('[name="venderId"]').append(`<option value="${d.vendorId}">${d.vendorName}</option>`);
+                });
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+
+    }
+</script>

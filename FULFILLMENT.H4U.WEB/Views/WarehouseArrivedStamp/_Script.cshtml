@@ -1,0 +1,284 @@
+﻿<script>
+    let model = {
+        sheftId: 0,
+        locationId: 0,
+        sheftName: null,
+        sheftDescription: null,
+        isActive: false,
+    }
+
+    function getFormData() {
+
+        let formData = new FormData(document.getElementById('form-create'));
+
+        const data = {};
+        formData.forEach((value, key) => (data[key] = value));
+
+        if (!data.sheftId) { data.sheftId = 0; }
+
+        data.sheftId = parseInt(data.sheftId);
+        data.isActive = Boolean(data.isActive);
+
+        return data;
+    }
+
+    function setForm(data) {
+        document.getElementsByName('sheftId')[0].value = data.sheftId;
+        document.getElementsByName('locationId')[0].value = data.locationId;
+        document.getElementsByName('sheftName')[0].value = data.sheftName;
+        document.getElementsByName('sheftDescription')[0].value = data.sheftDescription;
+        document.getElementsByName('isActive')[0].checked = data.isActive;
+
+        document.getElementById('form-create-create-by').innerText = data.createBy;
+        document.getElementById('form-create-create-date').innerText = dateToFormat(data.createDate);
+        document.getElementById('form-create-update-by').innerText = data.updateBy;
+        document.getElementById('form-create-update-date').innerText = dateToFormat(data.updateDate);
+    }
+
+    let columnDefs = [
+
+        {
+            field: 'documentNo',
+            headerName: 'เลขที่เอกสาร',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+            cellRenderer: function({ value }) {
+                return '<div> ' + value + ' <i class="fas fa-copy text-secondary pointer" data-toggle="tooltip" data-placement="bottom" title="Copy" onClick="clipboard(\'' + value + '\')"> ';
+            }
+        },
+        {
+            field: 'vendorName',
+            headerName: 'บริษัท - คู่ค้า',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'shippingValue',
+            headerName: 'ช่องทางจัดส่ง',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'carNumber',
+            headerName: 'รายละเอียด',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'shippingDate',
+            headerName: 'วันที่แจ้งจัดส่ง',
+            filter: 'agTextColumnFilter',
+            filterParams: {
+                caseSensitive: true,
+                textMatcher: (data) => {
+                    return dateToFormat(data.value).indexOf(data.filterText) > -1;
+                }
+            },
+            minWidth: 200,
+            cellRenderer: (data) => {
+                return dateToFormat(data.value);
+            },
+        },
+        {
+            field: 'arrivedDate',
+            headerName: 'วันที่มาถึง',
+            filter: 'agTextColumnFilter',
+            filterParams: {
+                caseSensitive: true,
+                textMatcher: (data) => {
+                    return dateToFormat(data.value).indexOf(data.filterText) > -1;
+                }
+            },
+            minWidth: 200,
+            cellRenderer: function({ value }) {
+                if (value == null) {
+                    return ' N/A ';
+                }
+                else {
+                    return '' + moment(value).format('DD/MM/YYYY') + '';
+                }
+            }
+        },
+        {
+            field: 'createBy',
+            headerName: 'ผู้สร้างเอกสาร',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'createDate',
+            headerName: 'วันที่ทำรายการ',
+            filter: 'agTextColumnFilter',
+            filterParams: {
+                caseSensitive: true,
+                textMatcher: (data) => {
+                    return dateToFormat(data.value).indexOf(data.filterText) > -1;
+                }
+            },
+            minWidth: 200,
+            cellRenderer: (data) => {
+                return dateToFormat(data.value);
+            },
+        },
+
+        {
+            field: 'action',
+            headerName: '',
+            cellStyle: { textAlign: 'center' },
+            minWidth: 60,
+            width: 60,
+            pinned: 'right',
+            cellRenderer: function(params) {
+                return '<div><i class="fas fa-truck text-warning pointer btn-arrived-stemp" data-toggle="tooltip" data-placement="bottom" title="รับของ" onClick="openEditModal(\'' + params.data.documentNo + '\')"> ';
+            }
+        }
+    ];
+
+    $(document).ready(function() {
+        var gridDiv = document.querySelector('#appTable');
+        new agGrid.Grid(gridDiv, gridOptions);
+        gridOptions.api.sizeColumnsToFit();
+        getItems();
+    });
+
+    // GET
+    function getItems() {
+        $.ajax({
+            url: '@Url.Action("GET_ALL", ViewData["ControllerName"])',
+            contentType: "application/json; charset=utf-8",
+            data: { documentStatus: "SHIPPING" },
+            dataType: "json",
+            success: (res) => {
+                //console.log('getItems', res);
+                var outputData = res.output_data;
+                gridOptions.api.setRowData(outputData);
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+    }
+
+    function onFillterTable() {
+        gridOptions.api.setQuickFilter(
+            document.getElementById('filter-text-box').value
+        );
+    }
+
+
+    function openEditModal(documentNo) {
+
+        // //console.log('openEditModal');
+        // alertConfirm(saveData, documentNo
+        // , { confirmButtonText: 'Yes, arrired shipping vendor!' }
+        // );
+
+
+        Swal.fire({
+            title: 'สินค้ามาถึงโกดังแล้ว ?',
+            text: "คุณไม่สามารถแก้ไขข้อมูลได้ภายหลัง !",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#045398',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'ยืนยัน',
+            cancelButtonText: 'ยกเลิก'
+        }).then((result) => {
+
+            if (result.isConfirmed) {
+                saveData(documentNo);
+            }
+        });
+
+
+    }
+
+    function saveData(documentNo) {
+        var obj = new Object();
+
+        obj.id = 0;
+        obj.documentNo = documentNo;
+
+        $.ajax({
+            type: "POST",
+            data: JSON.stringify(obj),
+            url: '@Url.Action("UPDATE",  ViewData["ControllerName"])',
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+                getItems();
+            },
+            error: (res) => {
+
+            },
+        });
+
+        Swal.fire(
+            'ดำเนินการตรวจสอบเรียบร้อย!',
+            'ข้อมูลถูกบันทึกเข้าระบบ สำหรับการทำ Process GR ต่อไป . . .',
+            'success'
+        )
+    }
+
+    const gridOptions = {
+        pagination: true,
+        paginationPageSize: 20,
+        paginationAutoPageSize: true,
+        columnDefs,
+        defaultColDef: {
+            flex: 1,
+            minWidth: 100,
+            sortable: true,
+            resizable: true,
+            floatingFilter: true,
+        },
+        autoGroupColumnDef: {
+            minWidth: 100,
+        },
+        suppressDragLeaveHidesColumns: true
+    };
+
+    function onExportExcel() {
+        gridOptions.api.exportDataAsCsv();
+    }
+
+    function tranformDataToModel(data) {
+        Object.keys(data).forEach(function(key) {
+            if (key in model) {
+                model[key] = data[key];
+            }
+        });
+        return model;
+    }
+
+    function onlyNumberKey(evt) {
+
+        var ASCIICode = (evt.which) ? evt.which : evt.keyCode
+        if (ASCIICode > 31 && (ASCIICode < 48 || ASCIICode > 57))
+            return false;
+        return true;
+    }
+
+
+    function clipboard(value) {
+        //console.log('copy text is ' + value);
+
+        navigator.clipboard.writeText(value);
+
+        toastAlert('success','Success', 'Copied: ' + value+ '👋');
+
+    }
+
+    function onlyDecimalKey(evt) {
+
+        var charCode = (evt.which) ? evt.which : evt.keyCode;
+        if (charCode != 46 && charCode > 31
+            && (charCode < 48 || charCode > 57))
+            return false;
+
+        return true;
+    }
+
+
+
+</script>

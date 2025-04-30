@@ -1,0 +1,74 @@
+﻿@{
+    ViewData["Title"] = "รายงานสต็อคสินค้า";
+    ViewData["Name"] = "ReportStock";
+    ViewData["NameLower"] = "";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@await Html.PartialAsync("_Content")
+
+@section Scripts {
+    @await Html.PartialAsync("_Script")
+}
+
+
+
+<div class="modal fade" id="showImageProductModal" tabindex="-1" aria-labelledby="imageProductModalTitle" aria-modal="true" role="dialog">
+    <div class="modal-dialog modal-xl modal-fullscreen-xl-down modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-transparent">
+                <input type="hidden" id="txtValueProductId" />
+                <h5 class="modal-title"> ภาพสินค้า</h5>
+                <button type="button" class="btn-close-x btn bg-danger" data-bs-dismiss="modal" aria-label="Close">X</button>
+            </div>
+            <div class="modal-body px-sm-5 mx-50 pb-5">
+                <!-- multi file upload starts -->
+                <!-- Examples -->
+                <section id="card-demo-example">
+                    <div class="row">
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-primary" onclick="AddImage()" type="button">เพิ่มรูปภาพสินค้า</button>
+                        </div>
+                    </div>
+                    <hr />
+                    <div class="row match-height" id="renderImageProduct">
+                    </div>
+                </section>
+                <!-- Examples -->
+                <!-- multi file upload ends -->
+            </div>
+            <div class="modal-footer">
+                <div class="form-group">
+                    <button type="reset" class="btn btn-outline-secondary" data-bs-dismiss="modal">ปิด</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal fade" id="imageProductModal" tabindex="-1" aria-labelledby="imageProductModalTitle" aria-modal="true" role="dialog">
+    <div class="modal-dialog modal-xl modal-fullscreen-xl-down modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-transparent">
+                <h5 class="modal-title"> อัพโหลดภาพสินค้า</h5>
+                <button type="button" class="btn-close-x btn bg-danger" data-bs-dismiss="modal" aria-label="Close">X</button>
+            </div>
+            <div class="modal-body px-sm-5 mx-50 pb-5">
+                <!-- multi file upload starts -->
+                <form enctype="multipart/form-data" method="post" id="formUpdateImageProduct">
+                    <div class="file-loading">
+                        <input id="file-update-product" type="file" multiple data-min-file-count="1" accept=".png,.jpg">
+                    </div>
+                </form>
+                <!-- multi file upload ends -->
+            </div>
+            <div class="modal-footer">
+                <div class="form-group">
+                    <a class="btn btn-primary me-1 data-submit" onclick="UploadData()">บันทึก</a>
+                    <button type="reset" class="btn btn-outline-secondary" data-bs-dismiss="modal">ปิด</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

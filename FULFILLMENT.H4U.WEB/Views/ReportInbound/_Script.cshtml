@@ -1,0 +1,519 @@
+﻿<script>
+    //Master Data
+    let PRODUCTS = [];
+    let VENDORS = [];
+    let BINS = [];
+    let SHEFTS = [];
+    let INBOUND_ITEMS = [];
+    let GR_ITEMS = [];
+    let SUM_AMOUNT = [];
+    let VALIDATE_SUM_AMOUNT = false;
+    let VALIDATE_PRODUCT_DUPLICATE = false;
+    let IS_CREATE = true;
+
+    getMaster();
+
+    async function getMaster() {
+        await getVendors();
+        await getBins();
+        await getShefts();
+        await getProducts();
+    }
+
+
+    function getProducts() {
+        $.ajax({
+            url: '@Url.Action("GET_ALL", "MasterProduct")',
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+                //console.log('getProducts', res.output_data);
+                PRODUCTS = res.output_data;
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+    }
+
+    function getVendors() {
+        $.ajax({
+            url: '@Url.Action("GET_ALL", "MasterVendor")',
+            data: { isActive: true },
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+                //console.log('getVendors', res.output_data);
+                VENDORS = res.output_data;
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+    }
+
+    function getBins() {
+        $.ajax({
+            url: '@Url.Action("GET_ALL", "MasterBin")',
+            data: { isActive: true, binType: 'INVENTORY' },
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+                //console.log('getBins', res.output_data);
+                BINS = res.output_data;
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+    }
+
+    function getShefts() {
+        $.ajax({
+            url: '@Url.Action("GET_ALL", "MasterSheft")',
+            data: { isActive: true },
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+                //console.log('getShefts', res.output_data);
+                SHEFTS = res.output_data;
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+    }
+
+    function setDropdownBins() {
+        $('.binId').each(function(i, obj) {
+            const val = $(this).val();
+            $(this).html(`<option value="">--- กรุณาเลือกข้อมูล ---</option>`);
+            BINS.forEach((d) => {
+                $(this).append(`<option value="${d.binId}">${d.binName}</option>`);
+            })
+            $(this).val(val);
+        });
+    }
+
+    function setDropdownShefts() {
+        $('.sheftId').each(function(i, obj) {
+            const val = $(this).val();
+            $(this).html(`<option value="">--- กรุณาเลือกข้อมูล ---</option>`);
+            SHEFTS.forEach((d) => {
+                $(this).append(`<option value="${d.sheftId}">${d.sheftName}</option>`);
+            })
+            $(this).val(val);
+        });
+    }
+
+    function setDropdownVendorProducts() {
+        const ib = INBOUND_ITEMS.map(i => i.productId);
+        const data = PRODUCTS.filter(p => ib.includes(p.productId));
+
+        $('.vendor-products').each(function(i, obj) {
+            const val = $(this).val();
+
+            $(this).html(`<option value="">--- กรุณาเลือกข้อมูล ---</option>`);
+
+            data.forEach((d) => {
+                $(this).append(`<option value="${d.productId}">${d.productName}</option>`);
+            });
+
+            $(this).val(val);
+
+        });
+    }
+
+    function findVendor(id) {
+        return VENDORS.find(x => x.id == id);
+    }
+
+    function findProduct(id) {
+        return PRODUCTS.find(x => x.id == id);
+    }
+
+    function findBin(id) {
+        return BINS.find(x => x.id == id);
+    }
+
+    function findSheft(id) {
+        return SHEFTS.find(x => x.id == id);
+    }
+
+    function fillterProductByVendor(vendorId) {
+        return PRODUCTS.filter(p => p.vendorId === vendorId);
+    }
+
+    var $repeater = null;
+
+    function setDrowdownOnAddStockAndProduct() {
+        setDropdownBins();
+        setDropdownShefts();
+        setDropdownVendorProducts();
+    }
+
+
+    function clearFormCreate() {
+
+        SUM_AMOUNT = [];
+        VALIDATE_SUM_AMOUNT = false;
+        VALIDATE_PRODUCT_DUPLICATE = false;
+        $('#form-create').removeClass('was-validated')
+    }
+
+    // on update product, amount
+
+    function calulateAmountCancel() {
+        SUM_AMOUNT = [];
+        VALIDATE_PRODUCT_DUPLICATE = false;
+        const repeaterData = $('.repeater-cancel').repeaterVal();
+        //console.log('cancel repeaterData', repeaterData);
+        let checkProductDuplicateInCard = [];
+
+        repeaterData.products.forEach(repeaterProduct => {
+            //console.log('cancel repeaterProduct', repeaterProduct);
+            const sumIndex = SUM_AMOUNT.findIndex(sumAmount => sumAmount.id == repeaterProduct.cancelProductId);
+
+            //console.log(sumIndex, 'sumIndex');
+            if (repeaterProduct.cancelProductId && repeaterProduct.cancelAmount) {
+
+                if (checkProductDuplicateInCard.includes(repeaterProduct.cancelProductId)) {
+                    VALIDATE_PRODUCT_DUPLICATE = true;
+                }
+
+                checkProductDuplicateInCard.push(repeaterProduct.cancelProductId);
+
+                if (sumIndex == -1) {
+                    SUM_AMOUNT.push({ id: parseInt(repeaterProduct.cancelProductId), amount: parseInt(repeaterProduct.cancelAmount) });
+                }
+                else {
+                    SUM_AMOUNT[sumIndex].amount += parseInt(repeaterProduct.cancelAmount);
+                }
+            }
+        });
+
+        //console.log('SUM_AMOUNT_END', SUM_AMOUNT);
+
+        setAmountProducts();
+    }
+
+    // on open create, update, on after input product, amount
+    function setAmountProducts() {
+
+        VALIDATE_SUM_AMOUNT = false;
+
+        //console.log('INBOUND_ITEMS', INBOUND_ITEMS);
+
+        let data = INBOUND_ITEMS.map(i => {
+            return {
+                id: i.productId,
+                sku: i.productSku,
+                name: i.productName,
+                amount: i.amount,
+                stock: 0,
+                remark: i.remark,
+                received: i.received,
+            }
+        });
+
+        $('.inbound-products').html('');
+        data.forEach((p) => {
+
+            let sum = { id: p.id, amount: 0 };
+            if (SUM_AMOUNT.find(x => x.id == p.id)) {
+                sum = SUM_AMOUNT.find(x => x.id == p.id);
+            }
+
+            sum.amount = sum.amount ? sum.amount : 0;
+
+            if (IS_CREATE) {
+                sum.amount += parseInt(p.received ? p.received : 0);
+            }
+
+            $('.inbound-products')
+                .append(`
+                                                        <div         class="row mt-1">
+                                                            <div         class="col" title="${p.sku} : ${p.name}">${p.sku} : ${p.name}</div>
+                                                            <div         class="col-2 col-md-1 h4 text-end"><b> ${p.amount}</b></div>
+                                                            <div         class="col-2 col-md-1 h4 text-end in-stock-${p.id}"><b>${sum ? sum.amount : '0'}</b></div>
+                                                            <div         class="col-3">${p.remark}</div>
+                                                        </di        v>`);
+
+            const className = '.in-stock-' + p.id;
+            $(className).removeClass('text-success text-danger');
+
+            if (sum && sum.amount == p.amount) {
+                //console.log('==')
+                $(className).addClass('text-success');
+            }
+            else if (sum && sum.amount > p.amount) {
+                //console.log('>')
+                $(className).addClass('text-danger');
+                VALIDATE_SUM_AMOUNT = true;
+            }
+        });
+    }
+
+    function setAmountProductsUpdate() {
+
+        //console.log('INBOUND_ITEMS', INBOUND_ITEMS);
+        //console.log('GR_ITEMS', GR_ITEMS);
+
+        let data = INBOUND_ITEMS.map(i => {
+            return {
+                id: i.productId,
+                sku: i.productSku,
+                name: i.productName,
+                amount: i.amount,
+                stock: 0,
+                remark: i.remark,
+                received: i.received,
+            }
+        });
+
+        $('.inbound-products').html('');
+        data.forEach((p) => {
+            let sum = { id: p.id, amount: 0 };
+            if (SUM_AMOUNT.find(x => x.id == p.id)) {
+                sum = SUM_AMOUNT.find(x => x.id == p.id);
+            }
+            sum.amount = sum.amount ? sum.amount : 0;
+            sum.amount += parseInt(p.received ? p.received : 0);
+            $('.inbound-products')
+                .append(`
+                                                            <div         class="row mt-1">
+                                                                <div         class="col">${p.sku} : ${p.name}</div>
+                                                                <div         class="col-2 col-md-1 h4 text-end"><b> ${p.amount}</b></div>
+                                                                <div         class="col-2 col-md-1 h4 text-end in-stock-${p.id}"><b>${sum ? sum.amount : '0'}</b></div>
+                                                                <div         class="col-3">${p.remark}</div>
+                                                            </di        v>`);
+
+        });
+    }
+
+
+</script>
+
+<script>
+    // Inbound
+    let inbound = {
+        gridDiv: null,
+        gridOptions: {},
+        columnDefs: {},
+    }
+
+    inbound.columnDefs = [
+        {
+            field: 'documentNo',
+            headerName: 'เลขที่เอกสาร',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+            cellRenderer: function({ value }) {
+                return '<div> ' + value + ' <i class="fas fa-copy text-secondary pointer" data-toggle="tooltip" data-placement="bottom" title="Copy" onClick="clipboard(\'' + value + '\')"> ';
+            }
+        },
+        {
+            field: 'vendorName',
+            headerName: 'บริษัท - คู่ค้า',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'updateBy',
+            headerName: 'ผู้ทำรายการ',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'updateDate',
+            headerName: 'วันที่ทำรายการ',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'documentStatus',
+            headerName: 'สถานะ',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+            cellRenderer: function({ value }) {
+                if (value == "PENDING") {
+                    return '<span class="badge bg-warning w-50"> PENDING </span>';
+                }
+                else if (value == "ARRIVED") {
+                    return '<span class="badge bg-success w-50"> ARRIVED </span>';
+                }
+                else if (value == "PICKLIST") {
+                    return '<span class="badge bg-info w-50"> PICKED </span>';
+                }
+                else if (value == "CANCEL") {
+                    return '<span class="badge bg-danger w-50"> CANCEL </span>';
+                }
+                else if (value == "SHIPPED") {
+                    return '<span class="badge bg-success w-50"> SHIPPED </span>';
+                }
+                else if (value == "SUCCESS") {
+                    return '<span class="badge bg-success w-50"> SUCCESS </span>';
+                }
+                else {
+                    return '<span class="badge bg-primary w-50"> ' + value + ' </span>';
+                }
+            }
+        },
+        {
+            field: 'action',
+            headerName: '#',
+            pinned: 'right',
+            width: 60,
+            cellRenderer: function(params) {
+                return '<div><i class="fas fa-eye text-secondary pointer" data-toggle="tooltip" data-placement="bottom" title="ดูข้อมูล" onClick="openCreateGRModal(' + params.data.id + ')"> ';
+            }
+        },
+
+    ];
+
+    inbound.gridOptions = {
+        pagination: true,
+        paginationPageSize: 20,
+        paginationAutoPageSize: true,
+        columnDefs: inbound.columnDefs,
+        defaultColDef: {
+            flex: 1,
+            minWidth: 60,
+            resizable: true,
+            sortable: true,
+            floatingFilter: true,
+        },
+        autoGroupColumnDef: {
+            minWidth: 60,
+        },
+        suppressDragLeaveHidesColumns: true,
+        suppressHorizontalScroll: true,
+    };
+
+    $(document).ready(function() {
+        inbound.gridDiv = document.querySelector('#appTableInbound');
+        new agGrid.Grid(inbound.gridDiv, inbound.gridOptions);
+        inbound.gridOptions.api.sizeColumnsToFit();
+        getInbounds();
+    });
+
+
+    var modalGrCreate = new bootstrap.Modal(document.getElementById('new-gr-modal'), {
+        keyboard: false
+    });
+
+    function createGrSetForm(data) {
+
+        const vendor = findVendor(data.vendorId);
+        document.getElementsByName('id')[0].value = 0;
+        document.getElementsByName('documentNo')[0].value = data.documentNo;
+        document.getElementsByName('documentNoDisplay')[0].value = data.documentNo;
+        document.getElementsByName('vendorId')[0].value = data.vendorId;
+        document.getElementsByName('vendorIdDisplay')[0].value = data.vendorName;
+        document.getElementsByName('inboundHeaderId')[0].value = data.id;
+
+        $("#ib-remark").prop('disabled', true);
+        $(".sheftId").prop('disabled', false);
+        $(".binId").prop('disabled', false);
+        $(".vendor-products").prop('disabled', false);
+
+        $('.add-stock').show();
+        $('.add-stock-product').show();
+        $('.delete-product').show();
+        $('.delete-round').show();
+        $('.lot-display').hide();
+    }
+
+    async function openCancelGrProductModal(id) {
+        clearFormCreate();
+        try {
+            // get Inbound items
+            const getIbProducts = await callApi({ type: "POST", url: '@Url.Action("GET_ITEM", "RequestInbound")?headerId=' + id });
+            //console.log('getIbProducts', getIbProducts);
+            INBOUND_ITEMS = getIbProducts ? getIbProducts : [];
+
+            // set form repeater
+            const repeaterData = INBOUND_ITEMS.map((item) => {
+                return {
+                    'id': item.id,
+                    'cancelHeaderId': item.headerId,
+                    'cancelProductId': item.productId,
+                    'cancelAmount': 0,
+                    'cancelRemark': ''
+                }
+            });
+
+            //console.log('repeaterData', repeaterData);
+
+            $repeaterCancel.setList(repeaterData);
+
+            $('.cancelProductDisplay').each(function(i, obj) {
+                $(this).val(repeaterData[i].cancelProductId);
+                //console.log('>>', repeaterData[i].cancelProductId);
+            });
+            setAmountProducts();
+            // get Inbound detail
+            const getIbDetail = await callApi({ type: "POST", url: '@Url.Action("DETAIL", "RequestInbound")?id=' + id });
+
+            //console.log('getIbDetail', getIbDetail);
+            modalGrCancel.show();
+        } catch (e) {
+            alertError(e.message);
+        }
+    }
+
+    async function openCreateGRModal(id) {
+        IS_CREATE = true;
+        $('#form-create-gr-products').show();
+        $('#form-create-gr-items').hide();
+        $('#form-gr-title').text('Add');
+        $('#form-gr-btn-update').hide();
+        $('#form-gr-btn-create').show();
+
+        clearFormCreate();
+        try {
+
+            // get Inbound items
+            const getIbProducts = await callApi({ type: "POST", url: '@Url.Action("GET_ITEM", "RequestInbound")?headerId=' + id });
+            //console.log('getIbProducts', getIbProducts);
+            INBOUND_ITEMS = getIbProducts ? getIbProducts : [];
+            setAmountProducts();
+
+            // get Inbound detail
+            const getIbDetail = await callApi({ type: "POST", url: '@Url.Action("DETAIL", "RequestInbound")?id=' + id });
+
+            //console.log('getIbDetail', getIbDetail);
+            createGrSetForm(getIbDetail);
+            modalGrCreate.show();
+
+        } catch (e) {
+            alertError(e.message);
+        }
+    }
+
+    // GET
+    function getInbounds() {
+        callApi({
+            url: '@Url.Action("GET_ALL", "RequestInbound")',
+            success: (res) => {
+                //console.log('getInboundItems', res);
+                var outputData = res.output_data;
+                inbound.gridOptions.api.setRowData(outputData);
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+    }
+
+    function onInboundFillterTable() {
+        inbound.gridOptions.api.setQuickFilter(
+            document.getElementById('inbound-filter-text-box').value
+        );
+    }
+
+    function onInboundExportExcel() {
+        inbound.gridOptions.api.exportDataAsCsv();
+    }
+
+</script>

@@ -1,0 +1,1043 @@
+﻿<script>
+    //Master Data
+    let PRODUCTS = [];
+    let VENDORS = [];
+    let BINS = [];
+    let SHEFTS = [];
+    let INBOUND_ITEMS = [];
+    let GR_ITEMS = [];
+    let SUM_AMOUNT = [];
+    let VALIDATE_SUM_AMOUNT = false;
+    let VALIDATE_PRODUCT_DUPLICATE = false;
+    let IS_CREATE = true;
+
+    getMaster();
+
+    async function getMaster() {
+        await getVendors();
+        await getBins();
+        await getShefts();
+        await getProducts();
+    }
+
+
+    function getProducts() {
+        $.ajax({
+            url: '@Url.Action("GET_ALL", "MasterProduct")',
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+                //console.log('getProducts', res.output_data);
+                PRODUCTS = res.output_data;
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+    }
+
+    function getVendors() {
+        $.ajax({
+            url: '@Url.Action("GET_ALL", "MasterVendor")',
+            data: { isActive: true },
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+                //console.log('getVendors', res.output_data);
+                VENDORS = res.output_data;
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+    }
+
+    function getBins() {
+        $.ajax({
+            url: '@Url.Action("GET_ALL", "MasterBin")',
+            data: { isActive: true, binType: 'INVENTORY' },
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+                //console.log('getBins', res.output_data);
+                BINS = res.output_data;
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+    }
+
+    function getShefts() {
+        $.ajax({
+            url: '@Url.Action("GET_ALL", "MasterSheft")',
+            data: { isActive: true },
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+                //console.log('getShefts', res.output_data);
+                SHEFTS = res.output_data;
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+    }
+
+    function setDropdownBins() {
+        $('.binId').each(function(i, obj) {
+            const val = $(this).val();
+            $(this).html(`<option value="">--- กรุณาเลือกข้อมูล ---</option>`);
+            BINS.forEach((d) => {
+                $(this).append(`<option value="${d.binId}">${d.binName}</option>`);
+            })
+            $(this).val(val);
+        });
+    }
+
+    function setDropdownShefts() {
+        $('.sheftId').each(function(i, obj) {
+            const val = $(this).val();
+            $(this).html(`<option value="">--- กรุณาเลือกข้อมูล ---</option>`);
+            SHEFTS.forEach((d) => {
+                $(this).append(`<option value="${d.sheftId}">${d.sheftName}</option>`);
+            })
+            $(this).val(val);
+        });
+    }
+
+    function setDropdownVendorProducts() {
+        const ib = INBOUND_ITEMS.map(i => i.productId);
+        const data = PRODUCTS.filter(p => ib.includes(p.productId));
+
+        $('.vendor-products').each(function(i, obj) {
+            const val = $(this).val();
+
+            $(this).html(`<option value="">--- กรุณาเลือกข้อมูล ---</option>`);
+
+            data.forEach((d) => {
+                $(this).append(`<option value="${d.productId}">${d.productName}</option>`);
+            });
+
+            $(this).val(val);
+
+        });
+    }
+
+    function findVendor(id) {
+        return VENDORS.find(x => x.id == id);
+    }
+
+    function findProduct(id) {
+        return PRODUCTS.find(x => x.id == id);
+    }
+
+    function findBin(id) {
+        return BINS.find(x => x.id == id);
+    }
+
+    function findSheft(id) {
+        return SHEFTS.find(x => x.id == id);
+    }
+
+    function fillterProductByVendor(vendorId) {
+        return PRODUCTS.filter(p => p.vendorId === vendorId);
+    }
+
+    var $repeater = null;
+
+    function setDrowdownOnAddStockAndProduct() {
+        setDropdownBins();
+        setDropdownShefts();
+        setDropdownVendorProducts();
+    }
+
+    $repeater = $('.repeater-create').repeater({
+        show: function() {
+            $(this).slideDown();
+            setDrowdownOnAddStockAndProduct();
+        },
+        isFirstItemUndeletable: true,
+        repeaters: [{
+            show: function() {
+                $(this).slideDown();
+                setDrowdownOnAddStockAndProduct();
+            },
+            isFirstItemUndeletable: true,
+            selector: '.inner-repeater'
+        }]
+    });
+
+    function clearFormCreate() {
+
+        SUM_AMOUNT = [];
+        VALIDATE_SUM_AMOUNT = false;
+        VALIDATE_PRODUCT_DUPLICATE = false;
+        $('#form-create').removeClass('was-validated')
+    }
+
+    // on update product, amount
+    function calulateAmount() {
+        SUM_AMOUNT = [];
+        VALIDATE_PRODUCT_DUPLICATE = false;
+        const repeaterData = $('.repeater-create').repeaterVal();
+
+        const rounds = repeaterData.rounds.forEach(round => {
+
+            //console.log('round', round);
+
+            let checkProductDuplicateInCard = [];
+
+            round.products.forEach(repeaterProduct => {
+                //console.log('repeaterProduct', repeaterProduct);
+
+                const sumIndex = SUM_AMOUNT.findIndex(sumAmount => sumAmount.id == repeaterProduct.productId);
+
+                //console.log(sumIndex, 'sumIndex');
+                if (repeaterProduct.productId && repeaterProduct.amount) {
+
+                    if (checkProductDuplicateInCard.includes(repeaterProduct.productId)) {
+                        VALIDATE_PRODUCT_DUPLICATE = true;
+                    }
+
+                    checkProductDuplicateInCard.push(repeaterProduct.productId);
+
+                    if (sumIndex == -1) {
+                        SUM_AMOUNT.push({ id: parseInt(repeaterProduct.productId), amount: parseInt(repeaterProduct.amount) });
+                    }
+                    else {
+                        SUM_AMOUNT[sumIndex].amount += parseInt(repeaterProduct.amount);
+                    }
+                }
+            });
+        });
+
+        //console.log('SUM_AMOUNT_END', SUM_AMOUNT);
+
+        setAmountProducts();
+    }
+
+    function calulateAmountCancel() {
+        SUM_AMOUNT = [];
+        VALIDATE_PRODUCT_DUPLICATE = false;
+        const repeaterData = $('.repeater-cancel').repeaterVal();
+        //console.log('cancel repeaterData', repeaterData);
+        let checkProductDuplicateInCard = [];
+
+        repeaterData.products.forEach(repeaterProduct => {
+            //console.log('cancel repeaterProduct', repeaterProduct);
+            const sumIndex = SUM_AMOUNT.findIndex(sumAmount => sumAmount.id == repeaterProduct.cancelProductId);
+
+            //console.log(sumIndex, 'sumIndex');
+            if (repeaterProduct.cancelProductId && repeaterProduct.cancelAmount) {
+
+                if (checkProductDuplicateInCard.includes(repeaterProduct.cancelProductId)) {
+                    VALIDATE_PRODUCT_DUPLICATE = true;
+                }
+
+                checkProductDuplicateInCard.push(repeaterProduct.cancelProductId);
+
+                if (sumIndex == -1) {
+                    SUM_AMOUNT.push({ id: parseInt(repeaterProduct.cancelProductId), amount: parseInt(repeaterProduct.cancelAmount) });
+                }
+                else {
+                    SUM_AMOUNT[sumIndex].amount += parseInt(repeaterProduct.cancelAmount);
+                }
+            }
+        });
+
+        //console.log('SUM_AMOUNT_END', SUM_AMOUNT);
+
+        setAmountProducts();
+    }
+
+    // on open create, update, on after input product, amount
+    function setAmountProducts() {
+
+        VALIDATE_SUM_AMOUNT = false;
+
+        //console.log('INBOUND_ITEMS', INBOUND_ITEMS);
+
+        let data = INBOUND_ITEMS.map(i => {
+            return {
+                id: i.productId,
+                sku: i.productSku,
+                name: i.productName,
+                amount: i.amount,
+                stock: 0,
+                remark: i.remark,
+                received: i.received,
+            }
+        });
+
+        $('.inbound-products').html('');
+        data.forEach((p) => {
+
+            let sum = { id: p.id, amount: 0 };
+            if (SUM_AMOUNT.find(x => x.id == p.id)) {
+                sum = SUM_AMOUNT.find(x => x.id == p.id);
+            }
+
+            sum.amount = sum.amount ? sum.amount : 0;
+
+            if (IS_CREATE) {
+                sum.amount += parseInt(p.received ? p.received : 0);
+            }
+
+            $('.inbound-products')
+                .append(`
+                                                        <div         class="row">
+                                                            <div         class="col-3">${p.sku} : ${p.name}</div>
+                                                            <div         class="col-2 h4 text-end"><b> ${p.amount}</b></div>
+                                                            <div         class="col-2 h4 text-end in-stock-${p.id}"><b>${sum ? sum.amount : '0'}</b></div>
+                                                            <div         class="col-5">${p.remark}</div>
+                                                        </di        v>`);
+
+            const className = '.in-stock-' + p.id;
+            $(className).removeClass('text-success text-danger');
+
+            if (sum && sum.amount == p.amount) {
+                //console.log('==')
+                $(className).addClass('text-success');
+            }
+            else if (sum && sum.amount > p.amount) {
+                //console.log('>')
+                $(className).addClass('text-danger');
+                VALIDATE_SUM_AMOUNT = true;
+            }
+        });
+    }
+
+    function setAmountProductsUpdate() {
+
+        //console.log('INBOUND_ITEMS', INBOUND_ITEMS);
+        //console.log('GR_ITEMS', GR_ITEMS);
+
+        let data = INBOUND_ITEMS.map(i => {
+            return {
+                id: i.productId,
+                sku: i.productSku,
+                name: i.productName,
+                amount: i.amount,
+                stock: 0,
+                remark: i.remark,
+                received: i.received,
+            }
+        });
+
+        $('.inbound-products').html('');
+        data.forEach((p) => {
+            let sum = { id: p.id, amount: 0 };
+            if (SUM_AMOUNT.find(x => x.id == p.id)) {
+                sum = SUM_AMOUNT.find(x => x.id == p.id);
+            }
+            sum.amount = sum.amount ? sum.amount : 0;
+            sum.amount += parseInt(p.received ? p.received : 0);
+            $('.inbound-products')
+                .append(`
+                                                            <div         class="row">
+                                                                <div         class="col-3">${p.sku} : ${p.name}</div>
+                                                                <div         class="col-2 h4 text-end"><b> ${p.amount}</b></div>
+                                                                <div         class="col-2 h4 text-end in-stock-${p.id}"><b>${sum ? sum.amount : '0'}</b></div>
+                                                                <div         class="col-5">${p.remark}</div>
+                                                            </di        v>`);
+
+        });
+    }
+
+
+</script>
+
+<script>
+
+    var modalGrCreate = new bootstrap.Modal(document.getElementById('new-gr-modal'), {
+        keyboard: false
+    });
+
+
+    function createGrSetForm(data) {
+
+        $repeater.setList([
+            {
+                'binId': null,
+                'sheftId': null,
+                'products': [{ 'id': 0, 'productId': 0, 'amount': 0, 'remark': '' }]
+            },
+        ]);
+
+        const vendor = findVendor(data.vendorId);
+        document.getElementsByName('id')[0].value = 0;
+        document.getElementsByName('documentNo')[0].value = data.documentNo;
+        document.getElementsByName('documentNoDisplay')[0].value = data.documentNo;
+        document.getElementsByName('vendorId')[0].value = data.vendorId;
+        document.getElementsByName('vendorIdDisplay')[0].value = data.vendorName;
+        document.getElementsByName('inboundHeaderId')[0].value = data.id;
+
+        $("#ib-remark").prop('disabled', true);
+        $(".sheftId").prop('disabled', false);
+        $(".binId").prop('disabled', false);
+        $(".vendor-products").prop('disabled', false);
+
+        $('.add-stock').show();
+        $('.add-stock-product').show();
+        $('.delete-product').show();
+        $('.delete-round').show();
+        $('.lot-display').hide();
+    }
+
+
+    $repeaterCancel = $('.repeater-cancel').repeater({
+        show: function() {
+            $(this).slideDown();
+            setDrowdownOnAddStockAndProduct();
+        },
+    });
+
+    async function openCreateGRModal(id) {
+        IS_CREATE = true;
+        $('#form-create-gr-products').show();
+        $('#form-create-gr-items').hide();
+        $('#form-gr-title').text('Add');
+        $('#form-gr-btn-update').hide();
+        $('#form-gr-btn-create').show();
+
+        clearFormCreate();
+        try {
+
+            // get Inbound items
+            const getIbProducts = await callApi({ type: "POST", url: '@Url.Action("GET_ITEM", "RequestInbound")?headerId=' + id });
+            //console.log('getIbProducts', getIbProducts);
+            INBOUND_ITEMS = getIbProducts ? getIbProducts : [];
+            setAmountProducts();
+
+            // get Inbound detail
+            const getIbDetail = await callApi({ type: "POST", url: '@Url.Action("DETAIL", "RequestInbound")?id=' + id });
+
+            //console.log('getIbDetail', getIbDetail);
+            createGrSetForm(getIbDetail);
+            modalGrCreate.show();
+
+        } catch (e) {
+            alertError(e.message);
+        }
+    }
+
+    // GET
+    function getInbounds() {
+        callApi({
+            url: '@Url.Action("GET_ALL", "RequestInbound")',
+            data: { documentStatus: "ARRIVED" },
+            success: (res) => {
+                //console.log('getInboundItems', res);
+                var outputData = res.output_data;
+                inbound.gridOptions.api.setRowData(outputData);
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+    }
+
+    function onInboundFillterTable() {
+        inbound.gridOptions.api.setQuickFilter(
+            document.getElementById('inbound-filter-text-box').value
+        );
+    }
+
+    function onInboundExportExcel() {
+        inbound.gridOptions.api.exportDataAsCsv();
+    }
+
+    // GR
+    let gr = {
+        gridDiv: null,
+        gridOptions: {},
+        columnDefs: {},
+    }
+
+    gr.columnDefs = [
+
+        {
+            field: 'documentNo',
+            headerName: 'เลขที่เอกสาร',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+            cellRenderer: function({ value }) {
+                return '<div> ' + value + ' <i class="fas fa-copy text-secondary pointer" data-toggle="tooltip" data-placement="bottom" title="Copy" onClick="clipboard(\'' + value + '\')"> ';
+            }
+        },
+        {
+            field: 'inboundHeaderDocumentNo',
+            headerName: 'เอกสารอ้างอิง (Inbound)',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+            cellRenderer: function({ value }) {
+                return '<div> ' + value + ' <i class="fas fa-copy text-secondary pointer" data-toggle="tooltip" data-placement="bottom" title="Copy" onClick="clipboard(\'' + value + '\')"> ';
+            }
+        },
+
+        {
+            field: 'vendorName',
+            headerName: 'บริษัท - คู่ค้า',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'contactName',
+            headerName: 'ชื่อผู้ติดต่อ',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'contactTel',
+            headerName: 'เบอร์โทร',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+
+        {
+            field: 'inboundArrivedDate',
+            headerName: 'วันที่ของมาถึง',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+            cellRenderer: (data) => {
+                return dateToFormat(data.value);
+            },
+            filterParams: {
+                caseSensitive: true,
+                textMatcher: (data) => {
+                    return dateToFormat(data.value).indexOf(data.filterText) > -1;
+                }
+            },
+        },
+        {
+            field: 'receiveStatus',
+            headerName: 'สถานะ',
+            filter: 'agTextColumnFilter',
+            minWidth: 180,
+            cellRenderer: function({ value }) {
+                if (value == "PENDING") {
+                    return '<span class="badge bg-warning w-50"> PENDING </span>';
+                }
+                else if (value == "PICKLIST") {
+                    return '<span class="badge bg-info w-50"> PICKED </span>';
+                }
+                else if (value == "CANCEL") {
+                    return '<span class="badge bg-danger w-50"> CANCEL </span>';
+                }
+                else if (value == "SHIPPED") {
+                    return '<span class="badge bg-success w-50"> SHIPPED </span>';
+                }
+                else if (value == "SUCCESS") {
+                    return '<span class="badge bg-success w-50"> SUCCESS </span>';
+                }
+                else {
+                    return '<span class="badge bg-primary w-50"> ' + value + ' </span>';
+                }
+            }
+        },
+        {
+            field: 'createBy',
+            headerName: 'ผู้ทำรายการ',
+            filter: 'agTextColumnFilter',
+            minWidth: 150,
+        },
+        {
+            field: 'createDate',
+            headerName: 'วันที่ทำรายการ',
+            filter: 'agTextColumnFilter',
+            filterParams: {
+                caseSensitive: true,
+                textMatcher: (data) => {
+                    return dateToFormat(data.value).indexOf(data.filterText) > -1;
+                }
+            },
+            cellRenderer: (data) => {
+                return dateToFormat(data.value);
+            },
+            minWidth: 200,
+        },
+        {
+            field: 'action',
+            headerName: '#',
+            pinned: 'right',
+            minWidth: 60,
+            cellRenderer: function(params) {
+                return '<div><i class="fas fa-list text-warning pointer" data-toggle="tooltip" data-placement="bottom" title="ดูประวัติ" onClick="openUpdateGrModal(' + params.data.id + ')"> ';
+            }
+        },
+    ];
+
+    gr.gridOptions = {
+        pagination: true,
+        paginationPageSize: 20,
+        paginationAutoPageSize: true,
+        columnDefs: gr.columnDefs,
+        defaultColDef: {
+            flex: 1,
+            minWidth: 60,
+            sortable: true,
+            resizable: true,
+            floatingFilter: true,
+        },
+        autoGroupColumnDef: {
+            minWidth: 60,
+        },
+        suppressDragLeaveHidesColumns: true
+    };
+
+    $(document).ready(function() {
+        gr.gridDiv = document.querySelector('#appTableGr');
+        new agGrid.Grid(gr.gridDiv, gr.gridOptions);
+        gr.gridOptions.api.sizeColumnsToFit();
+        getGrItems();
+    });
+
+    // GET
+    function getGrItems() {
+        $.ajax({
+            url: '@Url.Action("GET_ALL", "WarehouseGoodReceive")',
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+                //console.log('getGrItems', res);
+                let outputData = res.output_data;
+                gr.gridOptions.api.setRowData(outputData);
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+    }
+
+    function onGrFillterTable() {
+        gr.gridOptions.api.setQuickFilter(
+            document.getElementById('gr-filter-text-box').value
+        );
+    }
+
+    function onGrExportExcel() {
+        gr.gridOptions.api.exportDataAsCsv();
+    }
+
+    $(function() {
+        $("#form-create").on("submit", function(e) {
+
+            var form = $(this)[0];
+
+            if (IS_CREATE) {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                else if (VALIDATE_SUM_AMOUNT) {
+                    alertWarning("Stock Amount is invalid.");  //<---
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                else if (VALIDATE_PRODUCT_DUPLICATE) {
+                    alertWarning("Product is duplicate.");  //<---
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                else {
+                    //console.log('save()')
+                    createGR();
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }
+            // SUBMIT UPDATE
+            // else {
+            //     if (!form.checkValidity()) {
+            //         event.preventDefault();
+            //         event.stopPropagation();
+            //     }
+            //     // else if (VALIDATE_SUM_AMOUNT) {
+            //     //     alertWarning("Stock Amount is invalid.");  //<---
+            //     //     event.preventDefault();
+            //     //     event.stopPropagation();
+            //     // }
+            //     else {
+            //         //console.log('update()')
+            //         updateGr();
+            //         event.preventDefault();
+            //         event.stopPropagation();
+            //     }
+            //     form.classList.add('was-validated');
+            // }
+        });
+    });
+
+    const productModel = {
+        id: 0,
+        headerId: 0,
+        productId: 0,
+        receiveStatus: "PENDING",
+        amount: 0,
+        locationId: 1,
+        sheftId: 0,
+        binId: 0,
+        lot: "",
+        seq: 0,
+        remark: ""
+    }
+
+    function getProductData() {
+        const data = $('.repeater-create').repeaterVal();
+
+        let products = [];
+
+        const rounds = data.rounds.forEach(round => {
+            round.products.forEach(product => {
+                product.amount = parseInt(product.amount);
+                product.productId = parseInt(product.productId);
+                products.push({
+                    ...productModel,
+                    ...product,
+                    binId: parseInt(round.binId),
+                    sheftId: parseInt(round.sheftId),
+                    id: 0
+                });
+            })
+        })
+
+        //console.log('getProductData', products);
+        return products;
+    }
+
+    function getFormData() {
+        let data = {
+            id: $("[name='id']").val(),
+            documentNo: '',
+            inboundHeaderId: parseInt($("[name='inboundHeaderId']").val()),
+            vendorId: parseInt($("[name='vendorId']").val()),
+            remark: $("[name='remark']").val(),
+        };
+        if (!data.id) { data.id = 0; }
+        data.id = parseInt(data.id);
+        return data;
+    }
+
+    function createGR() {
+        $(':input[type="submit"]').prop('disabled', true);
+        let dataForm = getFormData();
+        let products = getProductData();
+
+        const data = { header: dataForm, item: products };
+        //console.log('data', data);
+
+        $.ajax({
+            type: "POST",
+            url: '@Url.Action("INSERT", ViewData["ControllerName"])',
+            data: JSON.stringify(data),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: function(res) {
+                if (res.status === false) {
+                    alertError(res.message);
+                    return;
+                }
+                getGrItems();
+                getInbounds();
+                $('#new-gr-modal').modal('hide');
+                alertSuccess();
+            },
+            complete: () => { $(':input[type="submit"]').prop('disabled', false); }
+
+        })
+
+    }
+
+    // Update
+    async function openUpdateGrModal(headerId) {
+        IS_CREATE = false;
+        $('#form-create-gr-products').hide();
+        $('#form-create-gr-items').show();
+        $('#form-gr-title').text('Update');
+        $('#form-gr-btn-update').show();
+        $('#form-gr-btn-create').hide();
+
+        clearFormCreate();
+
+        try {
+            const getGrItems = await callApi({ type: "POST", url: '@Url.Action("GET_ALL_BY_HEADER", ViewData["ControllerName"])?headerId=' + headerId });
+            //console.log('getGrItems', getGrItems);
+            GR_ITEMS = getGrItems.output_data;
+            grItems.gridOptions.api.setRowData(GR_ITEMS);
+
+            const getGrDetail = await callApi({ type: "GET", url: '@Url.Action("GET_DETAIL",  ViewData["ControllerName"])?id=' + headerId });
+            //console.log('getGrDetail', getGrDetail);
+
+            const getInboundItems = await callApi({ type: "POST", url: '@Url.Action("GET_ITEM", "RequestInbound")?headerId=' + getGrDetail.output_data.inboundHeaderId });
+            //console.log('getInboundItems', getInboundItems);
+
+            INBOUND_ITEMS = getInboundItems ? getInboundItems : [];
+            // setAmountProducts();
+            setAmountProductsUpdate();
+
+            updateGrSetForm(getGrDetail.output_data);
+            // calulateAmountUpdate();
+            modalGrCreate.show();
+
+        } catch (e) { alertError(e.message); }
+    }
+
+    function updateGrSetForm(data) {
+        //console.log('updateGrSetForm', data);
+
+        // let repeaterList = [];
+        // let productDataList = [];
+
+        // // add data : bin sheft product amount remark to card
+        // GR_ITEMS.forEach(grProduct => {
+        //     const sameBinSheftIndex = repeaterList.findIndex(item => item.binId == grProduct.binId && item.sheftId == grProduct.sheftId && item.seq == grProduct.seq);
+        //     const productData = { 'id': grProduct.id, 'id': grProduct.id, 'productId': grProduct.productId, 'amount': grProduct.amount, 'remark': grProduct.remark, lot: grProduct.lot };
+        //     productDataList.push(productData);
+
+        //     // add product to new round
+        //     if (sameBinSheftIndex == -1) {
+        //         repeaterList.push({
+        //             'binId': grProduct.binId, 'sheftId': grProduct.sheftId, 'seq': grProduct.seq, 'lot': grProduct.lot,
+        //             'products': [productData]
+        //         });
+        //     }
+        //     // add product to curent round
+        //     else {
+        //         repeaterList[sameBinSheftIndex].products.push(productData);
+        //     }
+        // });
+
+        // $repeater.setList(repeaterList);
+
+        // //console.log('repeaterList', repeaterList);
+
+        // // set dropdown defalut value
+        // $('.sheftId').each(function (i, obj) { $(this).val(repeaterList[i].sheftId); });
+        // $('.binId').each(function (i, obj) { $(this).val(repeaterList[i].binId); });
+        // $('.vendor-products').each(function (i, obj) { $(this).val(productDataList[i].productId); });
+
+        // $('.updateSheftId').each(function (i, obj) { $(this).val(repeaterList[i].sheftId); });
+        // $('.updateBinId').each(function (i, obj) { $(this).val(repeaterList[i].binId); });
+        // $('.updateProductId').each(function (i, obj) { $(this).val(productDataList[i].productId); });
+
+        const vendor = findVendor(data.vendorId);
+        document.getElementsByName('id')[0].value = data.id;
+        document.getElementsByName('documentNo')[0].value = data.documentNo;
+        document.getElementsByName('documentNoDisplay')[0].value = data.documentNo;
+        document.getElementsByName('vendorId')[0].value = data.vendorId;
+        document.getElementsByName('vendorIdDisplay')[0].value = data.vendorName;
+        // document.getElementsByName('inboundHeaderId')[0].value = data.id;
+        document.getElementsByName('remark')[0].value = data.remark;
+
+        $("#ib-remark").prop('disabled', true);
+        // $(".sheftId").prop('disabled', true);
+        // $(".binId").prop('disabled', true);
+        // $(".vendor-products").prop('disabled', true);
+
+        $('.add-stock').hide();
+        // $('.add-stock-product').hide();
+        // $('.delete-product').hide();
+        // $('.delete-round').hide();
+        // $('.lot-display').show();
+
+
+    }
+
+    // function getFormDataUpdate() {
+    //     let data = {
+    //         id: $("[name='id']").val(),
+    //         // documentNo: '',
+    //         // inboundHeaderId: parseInt($("[name='inboundHeaderId']").val()),
+    //         vendorId: parseInt($("[name='vendorId']").val()),
+    //         // remark: $("[name='remark']").val(),
+    //         receiveStatus: 'RECEIVED',
+    //     };
+    //     if (!data.id) { data.id = 0; }
+    //     data.id = parseInt(data.id);
+    //     return data;
+    // }
+
+    // function getProductDataUpdate() {
+    //     const data = $('.repeater-create').repeaterVal();
+
+    //     let products = [];
+
+    //     const rounds = data.rounds.forEach(round => {
+    //         round.products.forEach(product => {
+    //             product.id = parseInt(product.id);
+    //             product.amount = parseInt(product.amount);
+    //             product.productId = parseInt(product.productId);
+    //             product.remark = product.remark;
+
+    //             productTranfrom = product;
+    //             delete productTranfrom.updateProductId;
+
+    //             products.push({
+    //                 // ...productModel,
+    //                 ...productTranfrom,
+    //                 // binId: parseInt(round.binId),
+    //                 // sheftId: parseInt(round.sheftId),
+    //                 // id: parseInt(round.id),
+    //                 receiveStatus: 'RECEIVED',
+    //             });
+    //         })
+    //     })
+
+    //     //console.log('getProductData', products);
+    //     return products;
+    // }
+
+    // function updateGr() {
+    //     //console.log('updateGr');
+
+    //     let dataForm = getFormDataUpdate();
+    //     let products = getProductDataUpdate();
+    //     const data = { header: dataForm, item: products };
+    //     //console.log('data', data);
+
+    //     $.ajax({
+    //         type: "POST",
+    //         url: '@Url.Action("UPDATE", ViewData["ControllerName"])',
+    //         data: JSON.stringify(data),
+    //         contentType: "application/json; charset=utf-8",
+    //         dataType: "json",
+    //         success: function (res) {
+    //             if (res.status === false) {
+    //                 alertError(res.message);
+    //                 return;
+    //             }
+    //             getGrItems();
+    //             getInbounds();
+    //             $('#new-gr-modal').modal('hide');
+    //             alertSuccess();
+    //         },
+    //         complete: () => { $(':input[type="submit"]').prop('disabled', false); }
+    //     });
+    // }
+
+    // NG GRID GR_ITEMS
+    // GR
+    let grItems = {
+        gridDiv: null,
+        gridOptions: {},
+        columnDefs: {},
+    }
+
+    grItems.columnDefs = [
+        {
+            field: 'lot',
+            headerName: 'LOT',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'sheftName',
+            headerName: 'Sheft',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'binName',
+            headerName: 'BIN',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+
+        {
+            field: 'productName',
+            headerName: 'สินค้า',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'productSku',
+            headerName: 'SKU',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'amount',
+            headerName: 'จำนวน',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'remark',
+            headerName: 'หมายเหตุ',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'receiveStatus',
+            headerName: 'สถานะ',
+            filter: 'agTextColumnFilter',
+            pinned: 'right',
+            minWidth: 180,
+            cellRenderer: function({ value }) {
+                if (value == "RECEIVED") {
+                    return ' <span class="badge bg-success w-50">RECEIVED</span>';
+                }
+                else if (value == "CANCEL") {
+                    return ' <span class="badge bg-danger w-50">CANCEL</span>';
+                }
+                else {
+                    return ' <span class="badge bg-danger w-50">' + VALUE + '</span>';
+                }
+            }
+        },
+        {
+            field: 'createBy',
+            headerName: 'ผู้ทำรายการ',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'createDate',
+            headerName: 'เวลาที่ทำรายการ',
+            filter: 'agTextColumnFilter',
+            filterParams: {
+                caseSensitive: true,
+                textMatcher: (data) => {
+                    return dateToFormat(data.value).indexOf(data.filterText) > -1;
+                }
+            },
+            minWidth: 200,
+        },
+    ];
+
+    grItems.gridOptions = {
+        pagination: true,
+        paginationPageSize: 20,
+        paginationAutoPageSize: true,
+        columnDefs: grItems.columnDefs,
+        defaultColDef: {
+            flex: 1,
+            minWidth: 100,
+            sortable: true,
+            resizable: true,
+        },
+        autoGroupColumnDef: {
+            minWidth: 100,
+        },
+        suppressDragLeaveHidesColumns: true
+    };
+
+
+    function clipboard(value) {
+        //console.log('copy text is ' + value);
+
+        navigator.clipboard.writeText(value);
+
+        toastAlert('success','Success', 'Copied: ' + value+ '👋');
+    }
+
+    $(document).ready(function() {
+        grItems.gridDiv = document.querySelector('#appTableGrItems');
+        new agGrid.Grid(grItems.gridDiv, grItems.gridOptions);
+        grItems.gridOptions.api.sizeColumnsToFit();
+
+    });
+
+</script>

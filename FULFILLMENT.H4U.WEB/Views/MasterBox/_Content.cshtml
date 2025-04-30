@@ -1,0 +1,28 @@
+﻿@{
+    Layout = "~/Views/Shared/Template/_Master.cshtml";
+}
+
+<!-- Input Start-->
+<input type="hidden" class="form-control" name="id" />
+
+
+<div class="mb-1">
+    <label class="form-label required">รหัสกล่อง (QR Code)</label>
+    <input type="text" class="form-control" name="name" required />
+</div>
+<div class="mb-1">
+    <label class="form-label required">ขนาด</label>
+    <input type="text" class="form-control" name="size" required />
+</div>
+<div class="mb-1">
+    <label class="form-label required">รายละเอียด</label>
+    <input type="text" class="form-control" name="description" />
+</div>
+
+<div class="mb-1">
+    <div class="form-check">
+        <input type="checkbox" class="form-check-input" name="isActive" id="isActive">
+        <label class="form-check-label" for="isActive">เปิด - ปิด</label>
+    </div>
+</div>
+<!-- Input End-->

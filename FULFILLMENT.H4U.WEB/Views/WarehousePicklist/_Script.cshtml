@@ -1,0 +1,835 @@
+﻿<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script>
+    const { createApp } = Vue
+    const vueApp = createApp({
+        data() {
+            return {
+                message: 'Hello Vue!',
+                validate: {
+                    picks: [],
+                    successPicks: [],
+                    errorPicks: [],
+                    stocks: [],
+                },
+                // scan: {
+                //     input: '',
+                //     bin: null,
+                //     binPick: 0,
+                //     sheft: null,
+                //     sheftPick: 0,
+                // },
+                picklistProducts: [
+
+                    {
+                        productId: 0,
+                        productName: '',
+                        productSku: '',
+                        amount: 0,
+                        stocks: [
+                            {
+                                atBin: 0,
+                                binName: '',
+                                atSheft: 0,
+                                atLocation: 0,
+                                sheftName: '',
+                                amount: 0,
+                                pick: 0,
+                            }
+                        ],
+                        scan: {
+                            disabled: false,
+                            input: '',
+                            bin: null,
+                            binPick: 0,
+                            sheft: null,
+                            sheftPick: 0,
+                        },
+                    },
+                ]
+            }
+        },
+        methods: {
+            getDetail: async function (id) {
+                this.validate.picks = [];
+                this.validate.successPicks = [];
+                this.validate.errorPicks = [];
+                const getDetail = await callApi({ type: "GET", url: '@Url.Action("DETAIL", "RequestPurchaseOrder")?id=' + id });
+                //console.log('getItem', getDetail);
+                setForm(getDetail);
+
+                const getItems = await callApi({ type: "GET", url: '@Url.Action("ITEM_GET_ALL_BY_HEADER", "RequestPurchaseOrder")?headerId=' + getDetail.id });
+                //console.log('getItems', getItems);
+
+                const getStocks = await callApi({ type: "GET", url: '@Url.Action("GET_ALL", "ReportStock")?headerId=' + getDetail.id, data: { vendorId: getDetail.vendorId } });
+                //console.log('getStocks', getStocks.output_data);
+
+                this.picklistProducts = this.tranFromData(getDetail, getItems, getStocks.output_data);
+
+                openFormModal()
+                setTimeout(() => {
+                    document.getElementById('scanBinSheft1').focus();
+                }, 1500)
+            },
+            tranFromData: function (poDetail, poItems, masterStocks) {
+                let list = [];
+                poItems.forEach(item => {
+
+                    let stocks = [];
+                    masterStocks.forEach(stock => {
+                        if (item.productId === stock.productId) {
+                            stocks.push({
+                                atBin: stock.binId,
+                                binName: stock.binName,
+                                atSheft: stock.sheftId,
+                                sheftName: stock.sheftName,
+                                atLocation: 1,
+                                amount: stock.amount,
+                                pick: 0,
+                            });
+                        }
+                    });
+
+                    list.push({
+                        productId: item.productId,
+                        productName: item.productName,
+                        productSku: item.productSku,
+                        amount: item.amount,
+                        stocks: stocks,
+                        scan: {
+                            input: '',
+                            bin: null,
+                            binPick: 0,
+                            sheft: null,
+                            sheftPick: 0,
+                        },
+                    });
+
+                })
+
+
+                return list
+            },
+            sumPick: function (stocks) {
+                let sum = 0;
+                stocks.forEach(s => {
+                    sum = parseInt(s.pick ? s.pick : 0) + parseInt(sum)
+                });
+                return parseInt(sum);
+            },
+            validatePickProducts: function (scanIndex) {
+                this.validate.picks = [];
+                this.validate.successPicks = [];
+                this.validate.errorPicks = [];
+
+                this.picklistProducts.forEach((pd, index) => {
+                    if (parseInt(pd.amount) < this.sumPick(pd.stocks)) {
+                        this.validate.errorPicks.push(pd.productId);
+                    }
+                    else if (parseInt(pd.amount) === this.sumPick(pd.stocks)) {
+                        this.validate.successPicks.push(pd.productId);
+                        this.picklistProducts[index].scan.disabled = true;
+                        if (scanIndex + 1 < this.picklistProducts.length) {
+                            document.getElementById('scanBinSheft' + (scanIndex + 2)).focus();
+                        }
+                    }
+                    else if (parseInt(pd.amount) != this.sumPick(pd.stocks)) {
+                        this.validate.picks.push(pd.productId);
+                    }
+                });
+                return this.validate.picks;
+            },
+            validateMoreStock: function () {
+                this.validate.stocks = [];
+                this.picklistProducts.forEach(pd => {
+                    pd.stocks.forEach(s => {
+                        if (parseInt(s.stock) < parseInt(s.pick)) {
+                            this.validate.stocks.push(s.binName + s.sheftName);
+                        }
+                    });
+                });
+                return this.validate.stocks;
+            },
+            getData: function () {
+
+                let data = { header: {}, item: [] };
+                data.header = getFormData();
+                data.item = [];
+
+                this.picklistProducts.forEach(product => {
+                    product.stocks.forEach(stock => {
+                        if (parseInt(stock.pick) > 0) {
+                            data.item.push({
+                                id: 0,
+                                headerId: 0,
+                                productId: product.productId,
+                                productSku: product.productSku,
+                                amount: stock.pick,
+                                atLocation: 1,
+                                atSheft: stock.atSheft,
+                                atBin: stock.atBin,
+                            });
+                        }
+                    })
+                });
+
+                return data;
+            },
+            save: function () {
+                let data = this.getData();
+
+                if (!$('.scan-bin').val()) {
+                    $('.scan-bin').addClass('is-invalid');
+                    return;
+                }
+
+                if (this.validate.successPicks.length != this.picklistProducts.length) {
+                    alertWarning('The number of products picked is incorrect.');
+                    return;
+                }
+                saveItem(data);
+            },
+
+            cardValidateColor: function (productId) {
+                if (this.validate.successPicks.includes(productId)) {
+                    return '#d5ffcb';
+                }
+                else if (this.validate.errorPicks.includes(productId)) {
+                    return 'rgb(255 224 224)';
+                }
+                else
+                    return '';
+            },
+
+            // scanBinSheft: function (binSheft) {
+            //     let binData = BINS.find((bin) => bin.binNumber == binSheft);
+            //     let sheftData = SHEFT.find((sheft) => sheft.sheftName == binSheft);
+            //     this.scan.bin = null;
+            //     this.scan.sheft = null;
+            //     if (binData) {
+            //         return binData;
+            //     }
+            //     else if (sheftData) {
+            //         return sheftData;
+            //     }
+            //     else {
+            //         openToastWarning({ message: 'ข้อมูลที่ Scan ไม่ถูกต้อง' });
+            //         return null;
+            //     }
+            // }
+
+            onScanBinSheft(event, i) {
+                const scanInput = event.target.value;
+
+                // STEP-1: SCAN BIN OR SHEFT  
+                if (scanInput !== this.picklistProducts[i].productSku) {
+                    this.picklistProducts[i].scan.bin = null;
+                    this.picklistProducts[i].scan.sheft = null;
+                    if (scanInput != undefined) {
+                        let binData = BINS.find((bin) => bin.binNumber === scanInput);
+                        let sheftData = SHEFT.find((sheft) => sheft.sheftName === scanInput);
+                        // console.log('scanInput', scanInput);
+                        // console.log('binData', binData);
+                        // console.log('sheftData', sheftData);
+
+                        if (binData) {
+                            this.picklistProducts[i].scan.bin = binData;
+                        }
+                        else if (sheftData) {
+                            const haveBin = this.picklistProducts[i].stocks.find((s) => s.atSheft === sheftData.sheftId && s.atBin !== 0);
+                            if (haveBin) {
+                                openToastWarning({ message: 'โปรด Scan Bin' });
+                            }
+                            else {
+                                this.picklistProducts[i].scan.sheft = sheftData;
+                            }
+                        }
+                        else {
+                            if (scanInput != '') {
+                                openToastWarning({ message: 'ข้อมูลที่ Scan ไม่ถูกต้อง' });
+                            }
+                        }
+                    }
+                }
+                // STEP-2: SCAN PRODUCT_CODE
+                else if (this.picklistProducts[i].scan.bin !== null || this.picklistProducts[i].scan.sheft !== null) {
+                    let stockIndex = '';
+                    if (this.picklistProducts[i].scan.bin) {
+                        stockIndex = this.picklistProducts[i].stocks.findIndex(s => s.atBin === this.picklistProducts[i].scan.bin.binId);
+                    }
+                    else {
+                        stockIndex = this.picklistProducts[i].stocks.findIndex(s => s.atSheft === this.picklistProducts[i].scan.sheft.sheftId);
+                    }
+                    // PICK++
+                    if (this.picklistProducts[i].stocks[stockIndex].amount > this.picklistProducts[i].stocks[stockIndex].pick) {
+                        this.picklistProducts[i].stocks[stockIndex].pick += 1;
+                    }
+                    else {
+                        openToastWarning({ message: 'ไม่มีสินค้าใน stock' });
+                    }
+                }
+
+                this.picklistProducts[i].scan.input = '';
+
+                this.validatePickProducts(i);
+                this.validateMoreStock();
+            }
+        },
+
+        computed: {
+            // getBinSheftNumber() {
+            //     return this.author.books.length > 0 ? 'Yes' : 'No'
+            // }
+        },
+
+        watch: {
+
+            // picklistProducts: {
+            //     handler(newValue, oldValue) {
+            //         this.validatePickProducts();
+            //         this.validateMoreStock();
+
+            //         for (let i = 0; i < this.picklistProducts.length; i++) {
+            //             const scanInput = this.picklistProducts[i].scan.input;
+            //             if (scanInput != undefined) {
+            //                 let binData = BINS.find((bin) => bin.binNumber === scanInput);
+            //                 let sheftData = SHEFT.find((sheft) => sheft.sheftName === scanInput);
+            //                 // //console.log('scanInput', scanInput);
+            //                 // //console.log('SHEFT', SHEFT);
+            //                 // //console.log('sheftData', sheftData);
+            //                 this.picklistProducts[i].scan.bin = null;
+            //                 this.picklistProducts[i].scan.sheft = null;
+
+            //                 if (binData) {
+            //                     this.picklistProducts[i].scan.bin = binData;
+            //                 }
+            //                 else if (sheftData) {
+            //                     this.picklistProducts[i].scan.sheft = sheftData;
+            //                 }
+            //                 else {
+            //                     if (scanInput != '') {
+            //                         // toastAlert('warning','แจ้งเตือน', 'ข้อมูลที่ Scan ไม่ถูกต้อง');
+            //                         openToastWarning({ message: 'ข้อมูลที่ Scan ไม่ถูกต้อง' });
+            //                     }
+            //                 }
+            //             }
+
+
+            //         }
+            //     },
+            //     deep: true
+            // },
+
+            // 'scan.input': {
+            //     handler(newValue, oldValue) {
+            //         console.table('BINS', BINS);
+            //         //console.log('newValue', newValue);
+
+            //         let binData = BINS.find((bin) => bin.binNumber == newValue);
+            //         let sheftData = SHEFT.find((sheft) => sheft.sheftName == newValue);
+
+            //         //console.log('binData', binData);
+            //         //WR-01-SH06
+
+            //         this.scan.bin = null;
+            //         this.scan.sheft = null;
+
+            //         if (binData) {
+            //             this.scan.bin = binData;
+            //         }
+            //         else if (sheftData) {
+            //             this.scan.sheft = sheftData;
+            //         }
+            //     },
+            // }
+
+        },
+    }).mount('#vue-app');
+
+
+    let PRODUCTS = [];
+    let VENDORS = [];
+    let PACKINGBINS = [];
+    let BINS = [];
+    let SHEFT = [];
+
+    getMaster();
+
+    async function getMaster() {
+        await getVendors();
+        await getBins();
+        await getPackingBins();
+        await getSheft();
+        await getProducts();
+    }
+
+    function getProducts() {
+        $.ajax({
+            url: '@Url.Action("GET_ALL", "MasterProduct")',
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+                //console.log('getProducts', res.output_data);
+                PRODUCTS = res.output_data;
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+    }
+
+    function getVendors() {
+        $.ajax({
+            url: '@Url.Action("GET_ALL", "MasterVendor")',
+            data: { isActive: true },
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+                //console.log('getVendors', res.output_data);
+                VENDORS = res.output_data;
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+    }
+
+    function getPackingBins() {
+        $.ajax({
+            url: '@Url.Action("GET_ALL", "MasterBin")',
+            data: { isActive: true, binType: 'PACKING' },
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+                //console.log('getPackingBins', res.output_data);
+                PACKINGBINS = res.output_data;
+                // setDropdownBins();
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+    }
+
+    function getBins() {
+        $.ajax({
+            url: '@Url.Action("GET_ALL", "MasterBin")',
+            data: { isActive: true, binType: 'INVENTORY' },
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+                //console.log('getBins', res.output_data);
+                BINS = res.output_data;
+                // setDropdownBins();
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+    }
+
+    function getSheft() {
+        $.ajax({
+            url: '@Url.Action("GET_ALL", "MasterSheft")',
+            data: { isActive: true },
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+                //console.log('getSheft', res.output_data);
+                SHEFT = res.output_data;
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+    }
+
+    // function setDropdownBins() {
+    //     $('.binId').html(`<option value="">--- กรุณาเลือกข้อมูล ---</option>`);
+    //     PACKINGBINS.forEach((d) => {
+    //         $('.binId').append(`<option value="${d.binId}">${d.binName}</option>`);
+    //     })
+    // }
+
+    function findVendor(id) {
+        return VENDORS.find(x => x.id == id);
+    }
+
+    function findProduct(id) {
+        return PRODUCTS.find(x => x.id == id);
+    }
+
+    function findBin(id) {
+        return BINS.find(x => x.id == id);
+    }
+
+    function findPackingBin(id) {
+        return PACKINGBINS.find(x => x.id == id);
+    }
+
+
+    function fillterProductByVendor(vendorId) {
+        return PRODUCTS.filter(p => p.vendorId === vendorId);
+    }
+
+    function getFormData() {
+        let formData = new FormData(document.getElementById('form-create'));
+        const data = {};
+        formData.forEach((value, key) => (data[key] = value));
+        if (!data.id) { data.id = 0; }
+        data.id = parseInt(data.id);
+        data.vendorId = parseInt(data.vendorId);
+        data.purchaseOrderHeaderId = parseInt(data.id);
+        return data;
+    }
+
+    function setForm(data) {
+        const vendor = findVendor(data.vendorId);
+        document.getElementsByName('id')[0].value = data.id;
+        document.getElementsByName('documentNo')[0].value = data.documentNo;
+        document.getElementsByName('documentNoDisplay')[0].value = data.documentNo;
+        document.getElementsByName('vendorId')[0].value = data.vendorId;
+        document.getElementsByName('vendorIdDisplay')[0].value = data.vendorName;
+    }
+
+    let columnDefs = [
+        {
+            field: 'documentNo',
+            headerName: 'เลขที่เอกสาร (PO)',
+            minWidth: 200,
+            filter: 'agTextColumnFilter',
+            cellRenderer: function ({ value }) {
+                return '<div> ' + value + ' <i class="fas fa-copy text-secondary" data-toggle="tooltip" data-placement="bottom" title="Copy" style="cursor: pointer;" onClick="clipboard(\'' + value + '\')"> ';
+            }
+        },
+        {
+            field: 'vendorName',
+            headerName: 'บริษัท - คู่ค้า',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'contactName',
+            headerName: 'ชื่อผู้ติดต่อ',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'contactTel',
+            headerName: 'เบอร์โทร',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'shippingValue',
+            headerName: 'จัดส่งโดย',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+
+        {
+            field: 'createBy',
+            headerName: 'ผู้ทำรายการ',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'createDate',
+            headerName: 'วันที่ทำรายการ',
+            minWidth: 200,
+            filter: 'agTextColumnFilter',
+            cellRenderer: (data) => {
+                return dateToFormat(data.value);
+            },
+            filterParams: {
+                caseSensitive: true,
+                textMatcher: (data) => {
+                    return dateToFormat(data.value).indexOf(data.filterText) > -1;
+                }
+            },
+        },
+        {
+            field: 'documentStatus',
+            headerName: 'สถานะ',
+            minWidth: 200,
+            filter: 'agTextColumnFilter',
+            cellRenderer: function ({ data }) {
+                if (data.documentStatus == "PENDING") {
+                    return '<span class="badge bg-warning w-50"> PENDING </span>';
+                }
+                else if (data.documentStatus == "PICKLIST") {
+                    return '<span class="badge bg-success w-50"> PICKED </span>';
+                }
+                else if (data.documentStatus == "CANCEL") {
+                    return '<span class="badge bg-danger w-50"> CANCEL </span>';
+                }
+                else if (data.documentStatus == "SHIPPED") {
+                    return '<span class="badge bg-success w-50"> SHIPPED </span>';
+                }
+                else {
+                    return '<span class="badge bg-primary w-50"> ' + data.documentStatus + ' </span>';
+                }
+            }
+        },
+        {
+            field: 'action',
+            headerName: '',
+            cellStyle: { textAlign: 'center' },
+            minWidth: 60,
+            width: 60,
+            pinned: 'right',
+            cellRenderer: function ({ data }) {
+                return '<div><i class="fas fa-cart-arrow-down text-primary" data-toggle="tooltip" data-placement="bottom" title="หยิบสินค้า" style="cursor: pointer;" onClick="openEditModal(' + data.id + ')"> ';
+            }
+
+        }
+    ];
+
+
+</script>
+
+<script>
+    let FIRST_ORDERS = [];
+    let NOTI_ORDERS = [];
+
+    $(document).ready(function () {
+        var gridDiv = document.querySelector('#appTable');
+        new agGrid.Grid(gridDiv, gridOptions);
+        getItems();
+    });
+
+    // GET
+    function getItems() {
+        $.ajax({
+            url: '@Url.Action("GET_ALL", "RequestPurchaseOrder")',
+            contentType: "application/json; charset=utf-8",
+            data: { documentStatus: "PENDING" },
+            dataType: "json",
+            success: (res) => {
+                //console.log('getItems', res);
+                let orders = res.output_data;
+                FIRST_ORDERS = orders.map(order => order.documentNo);
+                gridOptions.api.setRowData(orders);
+                $('#noti-order').hide();
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+    }
+
+    function getItemsForNotification() {
+        $.ajax({
+            url: '@Url.Action("GET_ALL", "RequestPurchaseOrder")',
+            contentType: "application/json; charset=utf-8",
+            data: { documentStatus: "PENDING" },
+            dataType: "json",
+            success: (res) => {
+                //console.log('getItemsForNotification', res);
+                checkNotification(res.output_data);
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+    }
+
+    // setTimeout(() => {  getItemsForNotification(); }, 3000);
+
+    setInterval(() => {
+        getItemsForNotification();
+    }, 60000);
+
+    $('#noti-order').hide();
+    function checkNotification(newOrders) {
+        //console.log('checkNotification');
+        let newItems = newOrders.map(order => order.documentNo);
+        // get only out of first orders
+        newItems = newItems.filter(order => !FIRST_ORDERS.includes(order)).sort();
+
+        //console.log('NOTI_ORDERS >', NOTI_ORDERS);
+        //console.log('newItems >', newItems);
+
+        if (!arraysEqual(newItems, NOTI_ORDERS)) {
+            //console.log('noti !!!!');
+            NOTI_ORDERS = newItems;
+            $('#noti-order').show();
+            $('#noti-order-number').text(`New order (${NOTI_ORDERS.length})`)
+        }
+
+        // //console.log('FIRST_ORDERS', FIRST_ORDERS);
+        // //console.log('newItems', newItems);
+        // //console.log('NOTI_ORDERS', NOTI_ORDERS);
+
+    }
+
+    function arraysEqual(a1, a2) {
+        return JSON.stringify(a1) == JSON.stringify(a2);
+    }
+
+    function onFillterTable() {
+        gridOptions.api.setQuickFilter(
+            document.getElementById('filter-text-box').value
+        );
+    }
+
+    function saveItem(data) {
+        $('#submit-update').prop('disabled', true);
+        //console.log('saveItem', data);
+        var url = '@Url.Action("INSERT", ViewData["ControllerName"])';
+        $.ajax({
+            type: "POST",
+            url: url,
+            data: JSON.stringify(data),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: function (res) {
+                getItems();
+                if (res.status === false) {
+                    alertError(res.message);
+                    return;
+                }
+                $('#new-item-modal').modal('hide');
+                alertSuccess();
+            },
+            error: (res) => {
+                alertError(res.message);
+            },
+            complete: () => { $('#submit-update').prop('disabled', false); }
+        });
+    }
+
+    function openModalScan() {
+        $('#scan-modal').modal('show');
+        // //console.log(1);
+
+        // var modalScan = new bootstrap.Modal(document.getElementById('scan-modal'), {
+        //     keyboard: false
+        // })
+        // modalScan.show();
+    }
+
+    async function openEditModal(id) {
+        clearForm();
+        vueApp.getDetail(id);
+    }
+
+    function clearForm() {
+        document.getElementById("form-create").reset();
+    }
+
+    function openFormModal() {
+        var modalCreate = new bootstrap.Modal(document.getElementById('new-item-modal'), {
+            keyboard: false
+        })
+        modalCreate.show();
+    }
+
+    const gridOptions = {
+        pagination: true,
+        paginationPageSize: 20,
+        paginationAutoPageSize: true,
+        columnDefs,
+        defaultColDef: {
+            flex: 1,
+            minWidth: 100,
+            sortable: true,
+            resizable: true,
+            floatingFilter: true,
+        },
+        autoGroupColumnDef: {
+            minWidth: 100,
+        },
+        suppressDragLeaveHidesColumns: true
+    };
+
+    function onExportExcel() {
+        gridOptions.api.exportDataAsCsv();
+    }
+
+    function tranformDataToModel(data) {
+        Object.keys(data).forEach(function (key) {
+            if (key in model) {
+                model[key] = data[key];
+            }
+        });
+        return model;
+    }
+
+    function onlyNumberKey(evt) {
+
+        var ASCIICode = (evt.which) ? evt.which : evt.keyCode
+        if (ASCIICode > 31 && (ASCIICode < 48 || ASCIICode > 57))
+            return false;
+        return true;
+    }
+
+    function onlyDecimalKey(evt) {
+
+        var charCode = (evt.which) ? evt.which : evt.keyCode;
+        if (charCode != 46 && charCode > 31
+            && (charCode < 48 || charCode > 57))
+            return false;
+
+        return true;
+    }
+
+    // $("#form-scan").on("submit", function (e) {
+
+    //     var form = $(this)[0];
+    //     if (!form.checkValidity()) {
+    //         event.preventDefault();
+    //         event.stopPropagation();
+    //         //console.log(1);
+    //     }
+    //     else {
+    //         event.preventDefault();
+    //         event.stopPropagation();
+    //         //console.log(2);
+    //     }
+
+    //     form.classList.add('was-validated');
+    // });
+
+    //         //console.log(binNumber);
+
+    function clipboard(value) {
+        //console.log('copy text is ' + value);
+        navigator.clipboard.writeText(value);
+
+        toastAlert('success', 'Success', 'Copied: ' + value + '👋');
+
+    }
+
+    $('.scan-bin').change(() => {
+        $('.binId').removeClass('is-invalid');
+        const binNumber = $('.scan-bin').val();
+        let binData = PACKINGBINS.find((bin) => bin.binNumber == binNumber);
+        if (binData) {
+            $('.binId').val(binData.binId);
+            $('.binDisplay').text(binData.binName);
+            //console.log(binData);
+            //console.log(binData.binName);
+        }
+        else {
+            $('.scan-bin').val('');
+            $('.binId').val('');
+            $('.binDisplay').text('ไม่ระบุ');
+            // toastAlert('warning','แจ้งเตือน', 'ข้อมูล Bin ที่ Scan ไม่ถูกต้อง');
+            openToastWarning({ message: 'ข้อมูล Bin ที่ Scan ไม่ถูกต้อง' });
+        }
+    });
+
+    $('.scan-bin-clear').click(() => {
+        $('.scan-bin').val('');
+        $('.binId').val('');
+        $('.binDisplay').text('ไม่ระบุ');
+    });
+
+    var showBasicToast = new bootstrap.Toast($('.warning-toast'));
+
+    function openToastWarning({ message }) {
+        $('.warning-toast-message').text(message)
+        showBasicToast.show();
+    }
+
+</script>

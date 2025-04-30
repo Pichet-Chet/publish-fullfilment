@@ -1,0 +1,157 @@
+﻿@using FULFILLMENT.H4U.API.Model.Custom
+
+@model UserCount
+
+
+@{
+    Layout = "~/Views/Shared/Template/_Master.cshtml";
+}
+
+@section TopSection {
+    <section class="app-user-list">
+        <div class="row">
+            <div class="col-lg-3 col-sm-6">
+                <div class="card">
+                    <div class="card-body d-flex align-items-center justify-content-between">
+                        <div>
+                            <h3 class="fw-bolder mb-75">@Model.TotalUser</h3>
+                            <span>บัญชีทั้งหมด</span>
+                        </div>
+                        <div class="avatar bg-light-primary p-50">
+                            <span class="avatar-content">
+                                <i data-feather="user" class="font-medium-4"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-sm-6">
+                <div class="card">
+                    <div class="card-body d-flex align-items-center justify-content-between">
+                        <div>
+                            <h3 class="fw-bolder mb-75">@Model.TotalActive</h3>
+                            <span>กำลังใช้งาน</span>
+                        </div>
+                        <div class="avatar bg-light-success p-50">
+                            <span class="avatar-content">
+                                <i data-feather="user-check" class="font-medium-4"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-sm-6">
+                <div class="card">
+                    <div class="card-body d-flex align-items-center justify-content-between">
+                        <div>
+                            <h3 class="fw-bolder mb-75">@Model.TotalPending</h3>
+                            <span>รออนุมัติ</span>
+                        </div>
+                        <div class="avatar bg-light-warning p-50">
+                            <span class="avatar-content">
+                                <i data-feather="user-x" class="font-medium-4"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-sm-6">
+                <div class="card">
+                    <div class="card-body d-flex align-items-center justify-content-between">
+                        <div>
+                            <h3 class="fw-bolder mb-75">@Model.TotalInactive</h3>
+                            <span>ปิดการใช้งาน</span>
+                        </div>
+                        <div class="avatar bg-light-danger p-50">
+                            <span class="avatar-content">
+                                <i data-feather="user-plus" class="font-medium-4"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+}
+    <!-- Input Start-->
+    <input type="hidden" class="form-control" name="userId" />
+    <input type="hidden" class="form-control" name="secretKey" />
+
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="mb-1">
+                <label class="form-label required">User name</label>
+                <input type="text" class="form-control" name="userName" minlength="5" maxlength="25" required />
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="mb-1">
+                <label class="form-label required">Password</label>
+                <input type="password" class="form-control" name="userPassword" minlength="6" maxlength="50" required />
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="mb-1">
+                <label class="form-label required">First name (TH)</label>
+                <input type="text" class="form-control" name="firstNameTh" minlength="2" maxlength="50" required />
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="mb-1">
+                <label class="form-label required">Last name (TH)</label>
+                <input type="text" class="form-control" name="lastNameTh" minlength="2" maxlength="50" required />
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="mb-1">
+                <label class="form-label required">First name (EN)</label>
+                <input type="text" class="form-control" name="firstNameEn" minlength="2" maxlength="50" required />
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="mb-1">
+                <label class="form-label required">Last name (EN)</label>
+                <input type="text" class="form-control" name="lastNameEn" minlength="2" maxlength="50" required />
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="mb-1">
+                <label class="form-label required">Mobile</label>
+                <input type="text" class="form-control" name="mobile" maxlength="10" onkeypress="return onlyNumberKey(event)" required />
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="mb-1">
+                <label class="form-label required">Email</label>
+                <input type="email" class="form-control" name="email" minlength="5" maxlength="50" required />
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="mb-1">
+                <label class="form-label required">Company</label>
+                <select class="form-select" name="venderId" required>
+                    <option value="">--- กรุณาเลือกข้อมูล ---</option>
+                </select>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="mb-1">
+                <label class="form-label required">Role</label>
+                <select class="form-select" name="role" required>
+                    <option value="">--- กรุณาเลือกข้อมูล ---</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-1">
+        <div class="form-check">
+            <input type="checkbox" class="form-check-input" name="isActive" id="isActive" value="true">
+            <label class="form-check-label" for="isActive">is Active</label>
+        </div>
+    </div>
+    <!-- Input End-->

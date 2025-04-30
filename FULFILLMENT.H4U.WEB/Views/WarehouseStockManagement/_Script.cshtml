@@ -1,0 +1,278 @@
+﻿
+<script>
+
+    $(document).ready(function() {
+        var gridDiv = document.querySelector('#appTable');
+        new agGrid.Grid(gridDiv, gridOptions);
+        gridOptions.api.sizeColumnsToFit();
+        getItems();
+    });
+
+    // GET
+    function getItems() {
+        $.ajax({
+            url: '@Url.Action("GET_ALL", ViewData["ControllerName"])',
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+                //console.log('getItems', res);
+                var outputData = res.output_data;
+                gridOptions.api.setRowData(outputData);
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+    }
+
+    let model = {
+        id: 0,
+        stockId: 0,
+        type: "",
+        amountOld: 0,
+        amountChange: 0,
+        reason: "",
+    }
+
+    function getFormData() {
+
+        let formData = new FormData(document.getElementById('form-create'));
+
+        const data = {};
+        formData.forEach((value, key) => (data[key] = value));
+
+        if (!data.id) { data.id = 0; }
+
+        data.id = parseInt(data.id);
+        data.stockId = parseInt(data.id);
+        data.amountOld = parseInt(data.amountOld);
+        data.amountChange = parseInt(data.amountChange);
+        data.reason = data.reasonChange;
+
+
+        return data;
+    }
+
+
+
+    // CREATE
+    let submitIsEdit = false;
+
+    $(function() {
+        $("#form-create").on("submit", function(e) {
+            var form = $(this)[0];
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            } else {
+                saveItem();
+                event.preventDefault();
+            }
+            form.classList.add('was-validated');
+        });
+    });
+
+
+    function saveItem() {
+        data = getFormData();
+        dataModel = tranformDataToModel(data);
+
+        //console.log('saveItem', dataModel);
+
+        var url = '@Url.Action("UPDATE", ViewData["ControllerName"])';
+
+        $.ajax({
+            type: "POST",
+            url: url,
+            data: JSON.stringify(dataModel),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: function(res) {
+                if (res.status === false) {
+                    alertError(res.message);
+                    return;
+                }
+
+                getItems();
+                $('#new-item-modal').modal('hide');
+                alertSuccess();
+            },
+            error: (res) => {
+                alertError(res.message);
+            },
+
+        });
+    }
+
+
+    // CREATE
+    function openCreateModal() {
+        clearForm();
+        openFormModal({ isEdit: false })
+    }
+
+    function openEditModal(id) {
+        clearForm();
+        $.ajax({
+            type: "POST",
+            url: '@Url.Action("DETAIL", ViewData["ControllerName"])?id=' + id,
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+                //console.log('getItem', res);
+                setForm(res);
+                openFormModal({ isEdit: true })
+            },
+            error: (res) => {
+                alertError(res.message);
+            },
+        });
+    }
+
+
+    function clearForm() {
+        $('#form-create').removeClass('was-validated')
+
+        if (document.getElementsByName('@ViewData["NameLower"]Id').length > 0) {
+            document.getElementsByName('@ViewData["NameLower"]Id')[0].value = "";
+        }
+        else {
+            document.getElementsByName('id')[0].value = "";
+        }
+
+        document.getElementById("form-create").reset();
+    }
+
+
+    function openFormModal({ isEdit }) {
+        submitIsEdit = isEdit;
+        if (isEdit) {
+            $('#form-create-title').text('แก้ไข ');
+            $('#form-create-by').show()
+            $('#submit-update').show()
+            $('#submit-add').hide()
+        }
+        else {
+            $('#form-create-title').text('เพิ่ม ');
+            $('#form-create-by').hide()
+            $('#submit-update').hide()
+            $('#submit-add').show()
+        }
+
+        var modalCreate = new bootstrap.Modal(document.getElementById('new-item-modal'), {
+            keyboard: false
+        })
+        modalCreate.show();
+    }
+
+
+    function setForm(data) {
+        document.getElementsByName('id')[0].value = data.id;
+        document.getElementsByName('vendorName')[0].value = data.vendorName;
+        document.getElementsByName('productName')[0].value = data.productName;
+        document.getElementsByName('sheftName')[0].value = data.sheftName;
+        document.getElementsByName('binName')[0].value = data.binName;
+        document.getElementsByName('amountOld')[0].value = data.amount;
+
+
+        document.getElementById('form-create-create-by').innerText = data.createBy;
+        document.getElementById('form-create-create-date').innerText = dateToFormat(data.createDate);
+        document.getElementById('form-create-update-by').innerText = data.updateBy;
+        document.getElementById('form-create-update-date').innerText = dateToFormat(data.updateDate);
+    }
+
+
+    let columnDefs = [
+
+        {
+            field: 'vendorName',
+            headerName: 'บริษัท - คู่ค้า',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'productName',
+            headerName: 'ชื่อสินค้า',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'productSku',
+            headerName: 'SKU',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'sheftName',
+            headerName: 'Sheft',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'binName',
+            headerName: 'BIN',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'amount',
+            headerName: 'จำนวน (ชิ้น)',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'action',
+            headerName: '',
+            cellStyle: { textAlign: 'center' },
+            minWidth: 60,
+            width: 60,
+            pinned: 'right',
+            cellRenderer: function({ data }) {
+                return '<div> <a onClick="openEditModal(' + data.id + ')">  <i class="fas fa-sync pointer text-success" data-toggle="tooltip" data-placement="bottom" title="เพิ่มสต็อค"> </i> </a> </div> ';
+            }
+        },
+
+    ];
+
+
+
+    const gridOptions = {
+        pagination: true,
+        paginationPageSize: 20,
+        paginationAutoPageSize: true,
+        columnDefs,
+        defaultColDef: {
+            flex: 1,
+            minWidth: 100,
+            sortable: true,
+            resizable: true,
+            floatingFilter: true,
+        },
+        autoGroupColumnDef: {
+            minWidth: 100,
+        },
+        suppressDragLeaveHidesColumns: true
+    };
+
+    function onFillterTable() {
+        gridOptions.api.setQuickFilter(
+            document.getElementById('filter-text-box').value
+        );
+    }
+
+
+    function onExportExcel() {
+        gridOptions.api.exportDataAsCsv();
+    }
+
+    function tranformDataToModel(data) {
+        Object.keys(data).forEach(function(key) {
+            if (key in model) {
+                model[key] = data[key];
+            }
+        });
+        return model;
+    }
+
+
+</script>

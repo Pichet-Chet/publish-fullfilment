@@ -1,0 +1,798 @@
+﻿<script>
+
+    $(document).ready(function () {
+        $("#new-item-modal").on('shown.bs.modal', function () {
+            //$(this).find('input[type="binScan"]').focus();
+            $("#binScan").focus().select();
+        });
+    });
+
+    let PO_PENDING_LIST = [];
+    let VENDORS = [];
+    let BOXS = [];
+    let BINS = [];
+
+    // START GET MASTER
+    getBoxs();
+    getBins();
+    getVendors();
+
+    function getBoxs() {
+        $.ajax({
+            url: '@Url.Action("GET_ALL", "MasterBox")',
+            // data: { isActive: true, binType: 'INVENTORY' },
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+                //console.log('getBoxs', res.output_data);
+                BOXS = res.output_data;
+                //setDropdownBoxs();
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+    }
+
+    function setDropdownBoxs() {
+        $('.boxId').html(`<option value="">--- กรุณาเลือกข้อมูล ---</option>`);
+        BOXS.forEach((d) => {
+            $('.boxId').append(`<option value="${d.id}">${d.name} : ${d.size}</option>`);
+        })
+    }
+
+    function getVendors() {
+        $.ajax({
+            url: '@Url.Action("GET_ALL", "MasterVendor")',
+            data: { isActive: true },
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+                //console.log('getVendors', res.output_data);
+                VENDORS = res.output_data;
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+    }
+
+    function getBins() {
+        $.ajax({
+            url: '@Url.Action("GET_ALL", "MasterBin")',
+            data: { binType: 'PACKING' },
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+                //console.log('getBins', res.output_data);
+                BINS = res.output_data;
+                createPendingTable();
+                createPackingTable();
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+    }
+
+    function findBin(id) {
+        return BINS.find(x => x.binId == id);
+    }
+
+    function findVendor(id) {
+        return VENDORS.find(x => x.id == id);
+    }
+    // END GET MASTER
+
+    // START PENDING SCRIPT
+    let pending = {
+        gridDiv: null,
+        gridOptions: {},
+        columnDefs: {},
+    }
+
+
+    pending.columnDefs = [
+        {
+            field: 'documentNo',
+            headerName: 'เลขที่เอกสาร (PL)',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+            cellRenderer: function ({ value }) {
+                return '<div> ' + value + ' <i class="fas fa-copy text-secondary" data-toggle="tooltip" data-placement="bottom" title="Copy" style="cursor: pointer;" onClick="clipboard(\'' + value + '\')"> ';
+            }
+        },
+        {
+            field: 'purchaseOrderDocument',
+            headerName: 'เลขที่เอกสาร (PO)',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+            cellRenderer: function ({ value }) {
+                return '<div> ' + value + ' <i class="fas fa-copy text-secondary" data-toggle="tooltip" data-placement="bottom" title="Copy" style="cursor: pointer;" onClick="clipboard(\'' + value + '\')"> ';
+            }
+        },
+        {
+            field: 'vendorName',
+            headerName: 'บริษัท - คู่ค้า',
+            filter: 'agTextColumnFilter',
+            minWidth: 20,
+        },
+        //{
+        //    field: 'binId',
+        //    headerName: 'Bin (Dev mode only)',
+        //    minWidth: 20,
+        //    cellRenderer: ({ value }) => {
+        //        if (value == null) {
+        //            return '';
+        //        }
+        //        else {
+        //            const bin = findBin(value)
+        //            if (bin.binName == null || bin.binName === "undefined") {
+        //                return '';
+        //            }
+        //            //console.log(bin);
+        //            return '<div> ' + bin.binName + ' <i class="fas fa-copy text-secondary" data-toggle="tooltip" data-placement="bottom" title="Copy" style="cursor: pointer;" onClick="clipboard(\'' + bin.binName + '\')"> ';
+        //        }
+        //    }
+        //},
+        {
+            field: 'createBy',
+            headerName: 'ผู้ทำรายการ',
+            filter: 'agTextColumnFilter',
+            minWidth: 20,
+        },
+        {
+            field: 'createDate',
+            headerName: 'วันที่ทำรายการ',
+            filter: 'agTextColumnFilter',
+            filterParams: {
+                caseSensitive: true,
+                textMatcher: (data) => {
+                    return dateToFormat(data.value).indexOf(data.filterText) > -1;
+                }
+            },
+            minWidth: 20,
+            cellRenderer: function ({ value }) {
+                if (value == null) {
+                    return ' N/A ';
+                }
+                else {
+                    return '' + dateToFormat(value, 'DD/MM/YYYY HH:mm:ss');
+                }
+            }
+        },
+    ];
+
+    pending.gridOptions = {
+        pagination: true,
+        paginationPageSize: 20,
+        paginationAutoPageSize: true,
+        columnDefs: pending.columnDefs,
+        defaultColDef: {
+            flex: 1,
+            minWidth: 100,
+            resizable: true,
+            sortable: true,
+            floatingFilter: true,
+        },
+        autoGroupColumnDef: {
+            minWidth: 100,
+        },
+        suppressDragLeaveHidesColumns: true,
+        suppressHorizontalScroll: true,
+    };
+
+    function createPendingTable() {
+        pending.gridDiv = document.querySelector('#appTablePending');
+        new agGrid.Grid(pending.gridDiv, pending.gridOptions);
+        pending.gridOptions.api.sizeColumnsToFit();
+        getPendings();
+    }
+
+    function onPendingFillterTable() {
+        pending.gridOptions.api.setQuickFilter(
+            document.getElementById('pending-filter-text-box').value
+        );
+    }
+
+    function onPendingExportExcel() {
+        pending.gridOptions.api.exportDataAsCsv();
+    }
+
+    // GET
+    function getPendings() {
+        $.ajax({
+            url: '@Url.Action("GET_ALL", "WarehousePicklist")',
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            data: { documentStatus: "PENDING" },
+            success: (res) => {
+                //console.log('getPendings', res);
+                PO_PENDING_LIST = res.output_data;
+                pending.gridOptions.api.setRowData(PO_PENDING_LIST);
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+    }
+
+    // END PENDING SCRIPT
+
+
+    let columnDefs = [
+        {
+            field: 'documentNo',
+            headerName: 'เลขที่เอกสาร',
+            filter: 'agTextColumnFilter',
+            minWidth: 20,
+        },
+        {
+            field: 'vendorName',
+            headerName: 'บริษัท  - คู่ค้า',
+            filter: 'agTextColumnFilter',
+            minWidth: 20,
+            // cellRenderer: ({ value }) => {
+            //     if (!value)
+            //         return '';
+            //     const vendor = findVendor(value)
+            //     return vendor.vendorName;
+            // }
+        },
+        {
+            field: 'trackingNumber',
+            headerName: 'Tracking Number',
+            filter: 'agTextColumnFilter',
+            minWidth: 20,
+        },
+        {
+            field: 'binId',
+            headerName: 'BIN',
+            filter: 'agTextColumnFilter',
+            minWidth: 20,
+            cellRenderer: ({ value }) => {
+                console.log(BINS);
+                console.log(value);
+                if (!value)
+                    return '';
+                const bin = findBin(value)
+                return bin.binName;
+            }
+        },
+
+        // {
+        //     field: 'carNumber',
+        //     headerName: 'Car Number',
+        //     minWidth: 20,
+        // },
+        {
+            field: 'shippingDate',
+            headerName: 'วันที่จัดส่ง',
+            filter: 'agTextColumnFilter',
+            filterParams: {
+                caseSensitive: true,
+                textMatcher: (data) => {
+                    return dateToFormat(data.value).indexOf(data.filterText) > -1;
+                }
+            },
+            minWidth: 20,
+            cellRenderer: function ({ value }) {
+                if (value == null) {
+                    return ' N/A ';
+                }
+                else {
+                    return '' + dateToFormat(value, 'DD/MM/YYYY HH:mm:ss');
+                }
+            }
+        },
+        // {
+        //     field: 'arrivedDate',
+        //     headerName: 'Arrived Date',
+        //     minWidth: 20,
+        //     cellRenderer: function ({ value }) {
+        //         if (value == null) {
+        //             return ' N/A ';
+        //         }
+        //         else {
+        //             return '' + dateToFormat(value) + '';
+        //         }
+        //     }
+        // },
+        {
+            field: 'createBy',
+            headerName: 'ผู้ทำรายการ',
+            filter: 'agTextColumnFilter',
+            minWidth: 20,
+        },
+        {
+            field: 'createDate',
+            headerName: 'วันที่ทำรายการ',
+            filter: 'agTextColumnFilter',
+            filterParams: {
+                caseSensitive: true,
+                textMatcher: (data) => {
+                    return dateToFormat(data.value).indexOf(data.filterText) > -1;
+                }
+            },
+            minWidth: 20,
+            cellRenderer: function ({ value }) {
+                if (value == null) {
+                    return ' N/A ';
+                }
+                else {
+                    return '' + dateToFormat(value, 'DD/MM/YYYY HH:mm:ss');
+                }
+            }
+        },
+         
+        {
+            field: 'action',
+            headerName: '',
+            cellStyle: { textAlign: 'center' },
+            minWidth: 50,
+            width: 50,
+            pinned: 'right',
+            cellRenderer: function (params) {
+                return `
+                    <div class="text-primary">
+                        <i class="fas fa-print pointer" data-toggle="tooltip" data-placement="bottom" title="ปริ้น" onClick="showBarcode('${params.data.purchaseOrderHeader.trackingNumber}')">
+                        </div>`;
+            }
+        },
+
+        {
+            field: '',
+            headerName: '',
+            cellStyle: { textAlign: 'center' },
+            minWidth: 60,
+            width: 60,
+            pinned: 'right',
+            cellRenderer: function ({ data }) {
+                return `
+        <div>
+            <i class="fas fa-eye text-warning pointer" data-toggle="tooltip" data-placement="bottom" title="รายละเอียดสินค้า" onClick="detailModal(${data.id})"></i>
+        </div>`;
+            }
+        }
+        //,
+
+        //{
+        //    field: '',
+        //    headerName: '',
+        //    cellStyle: { textAlign: 'center' },
+        //    minWidth: 60,
+        //    width: 60,
+        //    pinned: 'right',
+        //    cellRenderer: function ({ data }) {
+        //        return `
+        //<div>
+        //    <i class="fas fa-boxes text-primary pointer" data-toggle="tooltip" data-placement="bottom" title="ยืนยันแพ็คสินค้า" onClick="openSelectBoxModal(${data.id})"></i>
+        //</div>`;
+        //    }
+        //}
+    ];
+
+    function createPackingTable(params) {
+        var gridDiv = document.querySelector('#appTable');
+        new agGrid.Grid(gridDiv, gridOptions);
+        getItems();
+    }
+
+    // GET
+    function getItems() {
+        $.ajax({
+            url: '@Url.Action("GET_ALL", ViewData["ControllerName"])',
+            data: { documentStatus: "PACKING" },
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+                console.log('getItems', res);
+                var outputData = res.output_data;
+                gridOptions.api.setRowData(outputData);
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+    }
+
+    function onFillterTable() {
+        gridOptions.api.setQuickFilter(
+            document.getElementById('filter-text-box').value
+        );
+    }
+
+    function onSubmitBinScan(){
+        const binNumber = $("#binScan").val();
+        const bin = validateBinList(binNumber);
+
+        if (!bin) {
+            alertWarning('Invalid bin number.');
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        else
+        {
+            savePacking(bin);
+        }
+    }
+
+    $(function () {
+        $("#form-create").on("submit", function (e) {
+            const binNumber = $("#binScan").val();
+            const bin = validateBinList(binNumber);
+            var form = $(this)[0];
+
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            else if (!bin) {
+                alertWarning('Invalid bin number.');
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            else {
+                savePacking(bin);
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        });
+    });
+
+    function validateBinList(binNumber) {
+        const data = BINS.find(bin => bin.binNumber === binNumber);
+        return data ? data : undefined;
+    }
+
+    function savePacking(bin) {
+        //console.log(bin);
+        $(':input[type="submit"]').prop('disabled', true);
+        $.ajax({
+            type: "POST",
+            url: '@Url.Action("INSERT", ViewData["ControllerName"])',
+            data: JSON.stringify({ id: 0, binId: parseInt(bin.binId) }),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: function (res) {
+                if (res.status === false) {
+                    alertError(res.message);
+                    return;
+                }
+                getPendings();
+                getItems();
+                $('#new-item-modal').modal('hide');
+                alertSuccess();
+
+
+
+            },
+            complete: () => { $(':input[type="submit"]').prop('disabled', false); }
+        });
+    }
+
+    const gridOptions = {
+        pagination: true,
+        paginationPageSize: 20,
+        paginationAutoPageSize: true,
+        columnDefs,
+        defaultColDef: {
+            flex: 1,
+            minWidth: 100,
+            sortable: true,
+            resizable: true,
+            floatingFilter: true,
+        },
+        autoGroupColumnDef: {
+            minWidth: 100,
+        },
+        suppressDragLeaveHidesColumns: true
+    };
+
+    function onExportExcel() {
+        gridOptions.api.exportDataAsCsv();
+    }
+
+    function onlyNumberKey(evt) {
+
+        var ASCIICode = (evt.which) ? evt.which : evt.keyCode
+        if (ASCIICode > 31 && (ASCIICode < 48 || ASCIICode > 57))
+            return false;
+        return true;
+    }
+
+    function onlyDecimalKey(evt) {
+
+        var charCode = (evt.which) ? evt.which : evt.keyCode;
+        if (charCode != 46 && charCode > 31
+            && (charCode < 48 || charCode > 57))
+            return false;
+
+        return true;
+    }
+
+    function openCreateModal() {
+        clearForm();
+        openFormModal()
+    }
+
+    function clearForm() {
+        $('#form-create').removeClass('was-validated')
+        document.getElementById("form-create").reset();
+    }
+
+    function openFormModal() {
+        $('#form-create-title').text('เพิ่ม ');
+        var modalCreate = new bootstrap.Modal(document.getElementById('new-item-modal'), {
+            keyboard: false
+        })
+        modalCreate.show();
+    }
+
+    function openSelectBoxModal(id) {
+
+        $('.boxDisplay').text('ไม่ระบุ');
+
+        $('#form-packing').removeClass('was-validated')
+        document.getElementById("form-packing").reset();
+        getDetail(id)
+        var modalBox = new bootstrap.Modal(document.getElementById('new-box-modal'), {
+            keyboard: false
+        })
+        modalBox.show();
+    }
+
+    async function getDetail(id) {
+        const detail = await callApi({ type: "GET", url: '@Url.Action("DETAIL", ViewData["ControllerName"])?id=' + id });
+        console.log('getItem', detail);
+        setForm(detail, detail.purchaseOrderItems);
+    }
+
+    function setForm(data, items) {
+        const vendor = findVendor(data.vendorId);
+        document.getElementsByName('id')[0].value = data.id;
+        document.getElementsByName('documentNo')[0].value = data.documentNo;
+        document.getElementsByName('documentNoDisplay')[0].value = data.documentNo;
+        document.getElementsByName('vendorName')[0].value = data.vendorName;
+
+        $('#products').html('');
+        items.forEach(p => {
+            $('#products').append(` <div class="col-6 mb-1">${p.productName}</div> <div class="col-6 mb-1">${p.amount}</div>`);
+        });
+    }
+
+    $("#form-packing").on("submit", function (e) {
+        const binNumber = $("#binScan").val();
+        const bin = validateBinList(binNumber);
+        var form = $(this)[0];
+
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        //else if (!parseInt($("[name='boxId']").val())) {
+        //    alertWarning('กรุณาแสกน Box');
+        //}
+        else {
+            addBox();
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+    });
+
+    function addBox() {
+        //console.log('addBox');
+        $(':input[type="submit"]').prop('disabled', true);
+        const data = {
+            id: parseInt($("[name='id']").val()),
+            boxId: parseInt($("[name='boxId']").val()),
+            //boxId: 0,
+            trackingNumber: $("[name='trackingNumber']").val(),
+            shippingPrice: $("[name='shippingPrice']").val(),
+            remark: $("[name='remark']").val(),
+        }
+        //console.log('data', data);
+        $.ajax({
+            type: "POST",
+            url: '@Url.Action("UPDATE", ViewData["ControllerName"])',
+            data: JSON.stringify(data),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: function (res) {
+                if (res.status === false) {
+                    alertError(res.message);
+                    return;
+                }
+                getPendings();
+                getItems();
+                $('#new-box-modal').modal('hide');
+                alertSuccess();
+            },
+            complete: () => { $(':input[type="submit"]').prop('disabled', false); }
+        });
+    }
+
+    //////////////
+    getDropdownPlatform();
+    getDropdownShippings();
+    
+    function getDropdownPlatform() {
+        $.ajax({
+            url: '@Url.Action("GET_ALL", "MasterPlatform")',
+            //data: { vendorId },
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+
+                //console.log('getDropdownPlatform', res.output_data);
+
+                if (res.output_data != null) {
+                    res.output_data.forEach((d) => {
+                        $('.platformValue').append(`<option value="${d.value}">${d.value}</option>`);
+                    })
+                }
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+
+    }
+
+    function getDropdownShippings() {
+        $.ajax({
+            url: '@Url.Action("GET_ALL", "MasterShipping")',
+            //data: { vendorId },
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+
+                //console.log('getDropdownShippings', res.output_data);
+
+                if (res.output_data != null) {
+                    res.output_data.forEach((d) => {
+                        $('.shippingValue').append(`<option value="${d.value}">${d.value}</option>`);
+                    })
+                }
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+
+    }
+
+    function detailModal(id) {
+
+        console.log(id);
+
+        getPoDetail(id);
+        var detailModal = new bootstrap.Modal(document.getElementById('detail-modal'), {
+            keyboard: false
+        })
+
+        $('#detail-modal').appendTo("body").modal('show');
+
+        //detailModal.show();
+
+    }
+
+    async function getPoDetail(id) {
+        const detail = await callApi({ type: "GET", url: '@Url.Action("DETAIL", ViewData["ControllerName"])?id=' + id });
+        //console.log('getItem', detail);
+        setFormDeteil(detail);
+    }
+
+    function setFormDeteil(data) {
+        const poHeader = data.purchaseOrderHeader;
+        const poItems = data.purchaseOrderItems;
+        // const vendor = findVendor(data.vendorId);
+        $("[name='fromName']").val(poHeader.fromName);
+        $("[name='fromAddress']").val(poHeader.fromAddress);
+        $("[name='fromTel']").val(poHeader.fromTel);
+        $("[name='fromEmail']").val(poHeader.fromEmail);
+        $("[name='toName']").val(poHeader.toName);
+        $("[name='toAddress']").val(poHeader.toAddress);
+        $("[name='toTel']").val(poHeader.toTel);
+        $("[name='toEmail']").val(poHeader.toEmail);
+        $("[name='remark']").val(poHeader.remark);
+        $("[name='platformValue']").val(poHeader.platformValue);
+        $("[name='shippingValue']").val(poHeader.shippingValue);
+        $("[name='trackingNumber']").val(poHeader.trackingNumber);
+
+        $('#products-detail').html('');
+
+        var idx = 0;
+
+        poItems.forEach(p => {
+
+            idx = idx + p.amount;
+
+            console.log(p);
+
+            $('#products-detail').append(` <div class="col-8 mb-1"> ${p.productSku} ${p.productName} ( สี ${p.productColor} ขนาด ${p.productDescription} )</div> <div class="col-4 mb-1">${p.amount} รายการ</div>`);
+        
+            
+        });
+
+        $('#products-detail').append(` <div class="col-8 mb-1"> <span style="font-weight:bold;font-size:17px"> จำนวนรวมทั้งสิ้น <span>  </div> <div class="col-4 mb-1"><span style="font-weight:bold;font-size:17px">  ${idx} รายการ <span></div>`);
+
+    }
+    ///////////////
+
+    function clipboard(value) {
+        //console.log('copy text is ' + value);
+
+        navigator.clipboard.writeText(value);
+
+        toastAlert('success', 'Success', 'Copied: ' + value + '👋');
+
+    }
+
+    $('.scan-box').on('change', event => {
+
+        $('.boxId').val(undefined);
+        $('.boxDisplay').text('ไม่ระบุ');
+
+        const boxName = $('.scan-box').val();
+        //console.log('BOXS', BOXS);
+        // //console.log('box', box);
+        let boxData = BOXS.find((box) => box.name == boxName);
+        if (boxData) {
+            $('.boxId').val(boxData.id);
+            $('.boxDisplay').text(boxData.name);
+            //console.log(boxData);
+        }
+        else {
+            $('.boxDisplay').text('ไม่ระบุ');
+            $('.scan-box').val('');
+            toastAlert('warning', 'แจ้งเตือน', 'ข้อมูล Box ที่ Scan ไม่ถูกต้อง');
+        }
+        //console.log(boxName);
+
+    });
+
+    $('.scan-box-clear').on('click', event => {
+        $('.scan-box').val('');
+        $('.boxId').val(undefined);
+        $('.boxDisplay').text('ไม่ระบุ');
+    });
+
+    var printModal = new bootstrap.Modal(document.getElementById('printModal'), { keyboard: false });
+
+    const qrcode = new QRCode(document.getElementById("gen-qrcode"), {
+        text: '',
+        width: 65,
+        height: 65,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.H
+    });
+    
+    function showBarcode(codeNumber) {
+
+        $('#printModal').appendTo("body").modal('show');
+
+        //printModal.show();
+        qrcode.clear();
+        qrcode.makeCode(codeNumber);
+        $('#gen-qrcode-text').text(codeNumber);
+    }
+
+    function printBarcode() {
+        //printModal.hide();
+        $('#printModal').appendTo("body").modal('hide');
+
+        $(".modal-fade").modal("hide");
+        $(".modal-backdrop").remove();
+        var printContents = document.getElementById('section-to-print').innerHTML;
+        var winPrint = window.open('', '', 'left=0,top=0,width=800,height=600,toolbar=0,scrollbars=0,status=0');
+        winPrint.document.write(printContents);
+        winPrint.document.close();
+        winPrint.focus();
+        winPrint.print();
+    }
+
+</script>

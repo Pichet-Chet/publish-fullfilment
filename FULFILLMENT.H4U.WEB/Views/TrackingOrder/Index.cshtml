@@ -1,0 +1,814 @@
+﻿@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html class="loading semi-dark-layout" lang="en" data-layout="semi-dark-layout" data-textdirection="ltr">
+<!-- BEGIN: Head-->
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=0,minimal-ui">
+    <meta name="description" content="">
+    <meta name="keywords" content="">
+    <meta name="author" content="">
+    <title>Tracking Order - Fulfillment Here4U</title>
+    <link rel="apple-touch-icon" href="../../../app-assets/images/ico/apple-icon-120.png">
+    <!-- <link rel="shortcut icon" type="image/x-icon" href="../../../app-assets/images/ico/favicon.ico"> -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500;1,600" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:ital,wght@0,100;0,200;0,300;0,400;0,500;1,100;1,200;1,300;1,400;1,500&display=swap" rel="stylesheet">
+
+
+    <!-- BEGIN: Vendor CSS-->
+    <link rel="stylesheet" type="text/css" href="../../../app-assets/vendors/css/vendors.min.css">
+    <link rel="stylesheet" type="text/css" href="../../../app-assets/vendors/css/forms/wizard/bs-stepper.min.css">
+    <link rel="stylesheet" type="text/css" href="../../../app-assets/vendors/css/forms/select/select2.min.css">
+    <!-- END: Vendor CSS-->
+    <!-- BEGIN: Theme CSS-->
+    <link rel="stylesheet" type="text/css" href="../../../app-assets/css/bootstrap.css">
+    <link rel="stylesheet" type="text/css" href="../../../app-assets/css/bootstrap-extended.css">
+    <link rel="stylesheet" type="text/css" href="../../../app-assets/css/colors.css">
+    <link rel="stylesheet" type="text/css" href="../../../app-assets/css/components.css">
+    <link rel="stylesheet" type="text/css" href="../../../app-assets/css/themes/dark-layout.css">
+    <link rel="stylesheet" type="text/css" href="../../../app-assets/css/themes/bordered-layout.css">
+    <link rel="stylesheet" type="text/css" href="../../../app-assets/css/themes/semi-dark-layout.css">
+
+    <!-- BEGIN: Page CSS-->
+    <link rel="stylesheet" type="text/css" href="../../../app-assets/css/core/menu/menu-types/vertical-menu.css">
+    <link rel="stylesheet" type="text/css" href="../../../app-assets/css/plugins/forms/form-wizard.css">
+    <link rel="stylesheet" type="text/css" href="../../../app-assets/css/plugins/forms/form-validation.css">
+    <link rel="stylesheet" type="text/css" href="../../../app-assets/css/pages/authentication.css">
+    <!-- END: Page CSS-->
+    <!-- BEGIN: Custom CSS-->
+    <link rel="stylesheet" type="text/css" href="../../../assets/css/style.css">
+    <!-- END: Custom CSS-->
+
+    <link rel="stylesheet" type="text/css" href="~/extendsion/fontawesome-free5/css/all.css">
+    <link rel="stylesheet" type="text/css" href="~/app-assets/vendors/css/extensions/toastr.min.css">
+
+    <style>
+
+        html body {
+            font-family: 'Prompt', sans-serif !important;
+        }
+
+        .pointer {
+            cursor: pointer;
+        }
+
+        .timeline-centered {
+            position: relative;
+            margin-bottom: 30px;
+        }
+
+            .timeline-centered.timeline-sm .timeline-entry {
+                margin-bottom: 20px !important;
+            }
+
+                .timeline-centered.timeline-sm .timeline-entry .timeline-entry-inner .timeline-label {
+                    padding: 1em;
+                }
+
+            .timeline-centered:before,
+            .timeline-centered:after {
+                content: " ";
+                display: table;
+            }
+
+            .timeline-centered:after {
+                clear: both;
+            }
+
+            .timeline-centered:before {
+                content: '';
+                position: absolute;
+                display: block;
+                width: 7px;
+                background: #e1e1e1;
+                left: 50%;
+                top: 20px;
+                bottom: 20px;
+                margin-left: -4px;
+            }
+
+            .timeline-centered .timeline-entry {
+                position: relative;
+                width: 50%;
+                float: right;
+                margin-bottom: 70px;
+                clear: both;
+            }
+
+                .timeline-centered .timeline-entry:before,
+                .timeline-centered .timeline-entry:after {
+                    content: " ";
+                    display: table;
+                }
+
+                .timeline-centered .timeline-entry:after {
+                    clear: both;
+                }
+
+                .timeline-centered .timeline-entry.begin {
+                    margin-bottom: 0;
+                }
+
+                .timeline-centered .timeline-entry.left-aligned {
+                    float: left;
+                }
+
+                    .timeline-centered .timeline-entry.left-aligned .timeline-entry-inner {
+                        margin-left: 0;
+                        margin-right: -28px;
+                    }
+
+                        .timeline-centered .timeline-entry.left-aligned .timeline-entry-inner .timeline-time {
+                            left: auto;
+                            right: -115px;
+                            text-align: left;
+                        }
+
+                        .timeline-centered .timeline-entry.left-aligned .timeline-entry-inner .timeline-icon {
+                            float: right;
+                        }
+
+                        .timeline-centered .timeline-entry.left-aligned .timeline-entry-inner .timeline-label {
+                            margin-left: 0;
+                            margin-right: 85px;
+                        }
+
+                            .timeline-centered .timeline-entry.left-aligned .timeline-entry-inner .timeline-label:after {
+                                left: auto;
+                                right: 0;
+                                margin-left: 0;
+                                margin-right: -9px;
+                                -moz-transform: rotate(180deg);
+                                -o-transform: rotate(180deg);
+                                -webkit-transform: rotate(180deg);
+                                -ms-transform: rotate(180deg);
+                                transform: rotate(180deg);
+                            }
+
+                .timeline-centered .timeline-entry .timeline-entry-inner {
+                    position: relative;
+                    margin-left: -31px;
+                }
+
+                    .timeline-centered .timeline-entry .timeline-entry-inner:before,
+                    .timeline-centered .timeline-entry .timeline-entry-inner:after {
+                        content: " ";
+                        display: table;
+                    }
+
+                    .timeline-centered .timeline-entry .timeline-entry-inner:after {
+                        clear: both;
+                    }
+
+                    .timeline-centered .timeline-entry .timeline-entry-inner .timeline-time {
+                        position: absolute;
+                        left: -115px;
+                        text-align: right;
+                        padding: 10px;
+                        -webkit-box-sizing: border-box;
+                        -moz-box-sizing: border-box;
+                        box-sizing: border-box;
+                    }
+
+                        .timeline-centered .timeline-entry .timeline-entry-inner .timeline-time > span {
+                            display: block;
+                        }
+
+                            .timeline-centered .timeline-entry .timeline-entry-inner .timeline-time > span:first-child {
+                                font-size: 18px;
+                                font-weight: bold;
+                            }
+
+                            .timeline-centered .timeline-entry .timeline-entry-inner .timeline-time > span:last-child {
+                                font-size: 12px;
+                            }
+
+                    .timeline-centered .timeline-entry .timeline-entry-inner .timeline-icon {
+                        background: #fff;
+                        color: #999999;
+                        display: block;
+                        width: 60px;
+                        height: 60px;
+                        -webkit-background-clip: padding-box;
+                        -moz-background-clip: padding-box;
+                        background-clip: padding-box;
+                        border-radius: 50%;
+                        text-align: center;
+                        border: 7px solid #e1e1e1;
+                        line-height: 45px;
+                        font-size: 15px;
+                        float: left;
+                    }
+
+                        .timeline-centered .timeline-entry .timeline-entry-inner .timeline-icon.bg-primary {
+                            background-color: #dc6767;
+                            color: #fff;
+                        }
+
+                        .timeline-centered .timeline-entry .timeline-entry-inner .timeline-icon.bg-success {
+                            background-color: #5cb85c;
+                            color: #fff;
+                        }
+
+                        .timeline-centered .timeline-entry .timeline-entry-inner .timeline-icon.bg-info {
+                            background-color: #5bc0de;
+                            color: #fff;
+                        }
+
+                        .timeline-centered .timeline-entry .timeline-entry-inner .timeline-icon.bg-warning {
+                            background-color: #f0ad4e;
+                            color: #fff;
+                        }
+
+                        .timeline-centered .timeline-entry .timeline-entry-inner .timeline-icon.bg-danger {
+                            background-color: #d9534f;
+                            color: #fff;
+                        }
+
+                        .timeline-centered .timeline-entry .timeline-entry-inner .timeline-icon.bg-red {
+                            background-color: #bf4346;
+                            color: #fff;
+                        }
+
+                        .timeline-centered .timeline-entry .timeline-entry-inner .timeline-icon.bg-green {
+                            background-color: #488c6c;
+                            color: #fff;
+                        }
+
+                        .timeline-centered .timeline-entry .timeline-entry-inner .timeline-icon.bg-blue {
+                            background-color: #0a819c;
+                            color: #fff;
+                        }
+
+                        .timeline-centered .timeline-entry .timeline-entry-inner .timeline-icon.bg-yellow {
+                            background-color: #f2994b;
+                            color: #fff;
+                        }
+
+                        .timeline-centered .timeline-entry .timeline-entry-inner .timeline-icon.bg-orange {
+                            background-color: #e9662c;
+                            color: #fff;
+                        }
+
+                        .timeline-centered .timeline-entry .timeline-entry-inner .timeline-icon.bg-pink {
+                            background-color: #bf3773;
+                            color: #fff;
+                        }
+
+                        .timeline-centered .timeline-entry .timeline-entry-inner .timeline-icon.bg-violet {
+                            background-color: #9351ad;
+                            color: #fff;
+                        }
+
+                        .timeline-centered .timeline-entry .timeline-entry-inner .timeline-icon.bg-grey {
+                            background-color: #4b5d67;
+                            color: #fff;
+                        }
+
+                        .timeline-centered .timeline-entry .timeline-entry-inner .timeline-icon.bg-dark {
+                            background-color: #594857;
+                            color: #fff;
+                        }
+
+                        .timeline-centered .timeline-entry .timeline-entry-inner .timeline-icon.bg-light {
+                            background-color: #9d9d9d;
+                            color: #fff;
+                        }
+
+                    .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label {
+                        position: relative;
+                        background: #ffffff;
+                        padding: 1.7em;
+                        margin-left: 85px;
+                        -webkit-background-clip: padding-box;
+                        -moz-background-clip: padding;
+                        background-clip: padding-box;
+                        -webkit-border-radius: 3px;
+                        -moz-border-radius: 3px;
+                        border-radius: 3px;
+                    }
+
+                        .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label.bg-red {
+                            background: #bf4346;
+                        }
+
+                            .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label.bg-red:after {
+                                border-color: transparent #bf4346 transparent transparent;
+                            }
+
+                            .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label.bg-red .timeline-title,
+                            .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label.bg-red p {
+                                color: #ffffff;
+                            }
+
+                        .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label.bg-green {
+                            background: #488c6c;
+                        }
+
+                            .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label.bg-green:after {
+                                border-color: transparent #488c6c transparent transparent;
+                            }
+
+                            .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label.bg-green .timeline-title,
+                            .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label.bg-green p {
+                                color: #ffffff;
+                            }
+
+                        .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label.bg-orange {
+                            background: #e9662c;
+                        }
+
+                            .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label.bg-orange:after {
+                                border-color: transparent #e9662c transparent transparent;
+                            }
+
+                            .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label.bg-orange .timeline-title,
+                            .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label.bg-orange p {
+                                color: #ffffff;
+                                font-family: 'Prompt', sans-serif !important;
+                            }
+
+                        .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label.bg-yellow {
+                            background: #f2994b;
+                        }
+
+                            .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label.bg-yellow:after {
+                                border-color: transparent #f2994b transparent transparent;
+                            }
+
+                            .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label.bg-yellow .timeline-title,
+                            .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label.bg-yellow p {
+                                color: #ffffff;
+                            }
+
+                        .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label.bg-blue {
+                            background: #0a819c;
+                        }
+
+                            .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label.bg-blue:after {
+                                border-color: transparent #0a819c transparent transparent;
+                            }
+
+                            .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label.bg-blue .timeline-title,
+                            .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label.bg-blue p {
+                                color: #ffffff;
+                            }
+
+                        .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label.bg-pink {
+                            background: #bf3773;
+                        }
+
+                            .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label.bg-pink:after {
+                                border-color: transparent #bf3773 transparent transparent;
+                            }
+
+                            .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label.bg-pink .timeline-title,
+                            .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label.bg-pink p {
+                                color: #ffffff;
+                            }
+
+                        .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label.bg-violet {
+                            background: #9351ad;
+                        }
+
+                            .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label.bg-violet:after {
+                                border-color: transparent #9351ad transparent transparent;
+                            }
+
+                            .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label.bg-violet .timeline-title,
+                            .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label.bg-violet p {
+                                color: #ffffff;
+                            }
+
+                        .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label.bg-grey {
+                            background: #4b5d67;
+                        }
+
+                            .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label.bg-grey:after {
+                                border-color: transparent #4b5d67 transparent transparent;
+                            }
+
+                            .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label.bg-grey .timeline-title,
+                            .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label.bg-grey p {
+                                color: #ffffff;
+                            }
+
+                        .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label.bg-dark {
+                            background: #594857;
+                        }
+
+                            .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label.bg-dark:after {
+                                border-color: transparent #594857 transparent transparent;
+                            }
+
+                            .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label.bg-dark .timeline-title,
+                            .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label.bg-dark p {
+                                color: #ffffff;
+                            }
+
+                        .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label.bg-light {
+                            background: #b4b4b4;
+                        }
+
+                            .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label.bg-light:after {
+                                border-color: transparent #f6f6f6 transparent transparent;
+                            }
+
+                            .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label.bg-light .timeline-title,
+                            .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label.bg-light p {
+                                color: #ffffff;
+                            }
+
+
+                        .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label:after {
+                            content: '';
+                            display: block;
+                            position: absolute;
+                            width: 0;
+                            height: 0;
+                            border-style: solid;
+                            border-width: 9px 9px 9px 0;
+                            border-color: transparent #ffffff transparent transparent;
+                            left: 0;
+                            top: 20px;
+                            margin-left: -9px;
+                        }
+
+                        .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label .timeline-title,
+                        .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label p {
+                            color: #999999;
+                            margin: 0;
+                        }
+
+                            .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label p + p {
+                                margin-top: 15px;
+                            }
+
+                        .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label .timeline-title {
+                            margin-bottom: 10px;
+                            font-family: 'Oswald';
+                            font-weight: bold;
+                        }
+
+                            .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label .timeline-title span {
+                                -webkit-opacity: .6;
+                                -moz-opacity: .6;
+                                opacity: .6;
+                                -ms-filter: alpha(opacity=60);
+                                filter: alpha(opacity=60);
+                            }
+
+                        .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label p .timeline-img {
+                            margin: 5px 10px 0 0;
+                        }
+
+                            .timeline-centered .timeline-entry .timeline-entry-inner .timeline-label p .timeline-img.pull-right {
+                                margin: 5px 0 0 10px;
+                            }
+    </style>
+
+</head>
+<!-- END: Head-->
+<!-- BEGIN: Body-->
+
+<body class="vertical-layout vertical-menu-modern blank-page navbar-floating footer-static  " data-open="click"
+      data-menu="vertical-menu-modern" data-col="blank-page">
+    <!-- BEGIN: Content-->
+    <div class="app-content content ">
+        <div class="content-overlay"></div>
+        <div class="header-navbar-shadow"></div>
+        <div class="content-wrapper">
+            <div class="content-header row">
+            </div>
+            <div class="content-body">
+                <div class="auth-wrapper auth-cover">
+                    <div class="auth-inner row m-0">
+                        <!-- Brand logo-->
+                        <a class="brand-logo" href="@Url.Action("Index","TrackingOrder")">
+                            <img src="~/logo/H4U-logo.png" width="200" />
+                        </a>
+                        <!-- /Brand logo-->
+                        <!-- Left Text-->
+                        <div class="col-lg-3 d-none d-lg-flex align-items-center p-0 bg-warning-x">
+                            <div class="w-100 d-lg-flex align-items-center justify-content-center">
+                                <!-- <img class="img-fluid w-100"
+                                    src="../../../app-assets/images/illustration/create-account.svg"
+                                    alt="multi-steps" /> -->
+                                <img class="img-fluid w-75" src="~/logo/H4U-logo-mascot.png" />
+
+                            </div>
+                        </div>
+                        <!-- /Left Text-->
+                        <!-- Register-->
+                        <div class="col-lg-9 align-items-center auth-bg px-2 px-sm  -3 px-lg-5 pt-3">
+
+                            <div class="width-900 mx-auto">
+
+                                <div class="row justify-content-center mb-5">
+                                    <div class="col col-lg-6">
+                                        <div class="content-header mb-2">
+                                            <h2 class="fw-bolder mb-75">เช็คเลขพัสดุ</h2>
+                                            <!-- <span>Message ... </span> -->
+                                        </div>
+                                        <div class="row justify-content-center">
+                                            <div class="col col-md-8">
+                                                <!-- <label class="form-label" for="multiStepsURL">Profile Link</label> -->
+                                                <input id="input" type="text" name="number" class="form-control"
+                                                       placeholder="TRACKING NUMBER" />
+                                            </div>
+                                            <div class="col col-md-4">
+                                                <button id="btn-search" class="btn btn-outline-primary">
+                                                    <i class="fa fa-search"> </i> ค้นหา
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div id="trackingDisplay" class="row text-center">
+                                    <div class="col-10">
+                                        <div class="timeline-centered timeline-sm">
+                                            <article class="timeline-entry">
+
+                                                <div class="timeline-entry-inner mb-3">
+                                                    <time datetime="2014-01-09T13:22" class="timeline-time">
+                                                        <span id="timeline-time-1"></span><span id="timeline-date-1"></span>
+                                                    </time>
+                                                    <div id="timeline-icon-1" class="timeline-icon bg-light">
+                                                        <i class="fas fa-file-alt" id="timeline-icon-i-1"></i>
+                                                    </div>
+                                                    <div id="timeline-label-1" class="timeline-label bg-light">
+                                                        <h2 class="timeline-title text-muted" id="timeline-title-1">
+                                                            สร้างคำสั่งซื้อ
+                                                        </h2>
+                                                        <p class="text-muted" id="timeline-message-1">message...</p>
+                                                    </div>
+                                                </div>
+
+                                                <div class="timeline-entry-inner mb-3">
+                                                    <time datetime="2014-01-09T13:22" class="timeline-time">
+                                                        <span id="timeline-time-2"></span><span id="timeline-date-2"></span>
+                                                    </time>
+                                                    <div id="timeline-icon-2" class="timeline-icon bg-light">
+                                                        <i class="fas fa-box-open" id="timeline-icon-i-2"></i>
+                                                    </div>
+                                                    <div id="timeline-label-2" class="timeline-label bg-light">
+                                                        <h2 class="timeline-title text-muted" id="timeline-title-2">
+                                                            จัดของ
+                                                        </h2>
+                                                        <p class="text-muted" id="timeline-message-2">message...</p>
+                                                    </div>
+                                                </div>
+
+                                                <div class="timeline-entry-inner mb-3">
+                                                    <time datetime="2014-01-09T13:22" class="timeline-time">
+                                                        <span id="timeline-time-3"></span><span id="timeline-date-3"></span>
+                                                    </time>
+                                                    <div id="timeline-icon-3" class="timeline-icon bg-light">
+                                                        <i class="fas fa-box" id="timeline-icon-i-3"></i>
+                                                    </div>
+                                                    <div id="timeline-label-3" class="timeline-label bg-light">
+                                                        <h2 class="timeline-title text-muted" id="timeline-title-3">
+                                                            แพ็คของ
+                                                        </h2>
+                                                        <p class="text-muted" id="timeline-message-3">message...</p>
+                                                    </div>
+                                                </div>
+
+                                                <div class="timeline-entry-inner mb-3">
+                                                    <time datetime="2014-01-09T13:22" class="timeline-time">
+                                                        <span id="timeline-time-4"></span><span id="timeline-date-4"></span>
+                                                    </time>
+                                                    <div id="timeline-icon-4" class="timeline-icon bg-light">
+                                                        <i class="fas fa-truck" id="timeline-icon-i-4"></i>
+                                                    </div>
+                                                    <div id="timeline-label-4" class="timeline-label bg-light">
+                                                        <h2 class="timeline-title text-muted" id="timeline-title-4">
+                                                            กำลังจัดส่ง
+                                                        </h2>
+                                                        <p>
+                                                            <span id="tracking-title">Tracking Number: </span>
+                                                            <span id="tracking-badge" class="pointer badge bg-warning"
+                                                                  onclick="clipboard(this)">
+                                                                <span class="text-muted" id="timeline-message-4"
+                                                                      data-number=""></span>
+                                                                <i class="fas fa-copy text-white" data-toggle="tooltip"
+                                                                   data-placement="bottom" title="Copy"></i>
+                                                            </span>
+                                                        </p>
+                                                        <p class="text-muted">
+                                                            <a id="tracking-link"
+                                                               class="badge-x bg-warning-x btn btn-outline-light"
+                                                               href="#" target="_blank"></a>
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                            </article>
+                                        </div>
+                                    </div>
+                                    <!-- <div class="col-lg-3">
+                                        <div class="bg-primary rounded-circle" width="140" height="140">s</div>
+
+                                        <h2>Heading</h2>
+                                        <p>Some representative<p>
+                                        <a class="btn btn-secondary" href="#">View details »</a></p>
+                                    </div> -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <!-- END: Content-->
+    <!-- warning toast -->
+    <div class="toast warning-toast position-fixed top-0 end-0 text-white bg-warning border-0" style="z-index: 1500;"
+         role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="3000">
+        <div class="d-flex">
+            <div class="toast-body warning-toast-message"></div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
+                    aria-label="Close"></button>
+        </div>
+    </div>
+    <!-- warning toast ends -->
+    <!-- BEGIN: Vendor JS-->
+    <script src="../../../app-assets/vendors/js/vendors.min.js"></script>
+    <!-- BEGIN Vendor JS-->
+    <!-- BEGIN: Page Vendor JS-->
+    <script src="../../../app-assets/vendors/js/forms/wizard/bs-stepper.min.js"></script>
+    <script src="../../../app-assets/vendors/js/forms/select/select2.full.min.js"></script>
+    <script src="../../../app-assets/vendors/js/forms/validation/jquery.validate.min.js"></script>
+    <script src="../../../app-assets/vendors/js/forms/cleave/cleave.min.js"></script>
+    <script src="../../../app-assets/vendors/js/forms/cleave/addons/cleave-phone.us.js"></script>
+    <!-- END: Page Vendor JS-->
+    <!-- BEGIN: Theme JS-->
+    <script src="../../../app-assets/js/core/app-menu.js"></script>
+    <script src="../../../app-assets/js/core/app.js"></script>
+    <!-- END: Theme JS-->
+    <!-- BEGIN: Page JS-->
+    <script src="../../../app-assets/js/scripts/pages/auth-register.js"></script>
+    <!-- END: Page JS-->
+    <script src="../../../app-assets/vendors/js/extensions/moment.min.js"></script>
+
+    <script src="~/app-assets/vendors/js/extensions/toastr.min.js"></script>
+    <script src="~/app-assets/js/scripts/extensions/ext-component-toastr.js"></script>
+
+    <script>
+        $(window).on('load', function () {
+            if (feather) {
+                feather.replace({
+                    width: 14,
+                    height: 14
+                });
+            }
+        })
+    </script>
+
+    <script>
+        disabledTimeline();
+
+        $('#btn-search').click(function () {
+            const input = $('#input').val();
+            $('#trackingDisplay').slideUp();
+
+            $.ajax({
+                url: '@Url.Action("GET_ALL", "TrackingOrder")',
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                data: { purchaseOrderNo: input },
+                success: (res) => {
+
+                    $('#timeline-icon-i-1').addClass('text-secondary');
+                    $('#timeline-icon-i-2').addClass('text-secondary');
+                    $('#timeline-icon-i-3').addClass('text-secondary');
+                    $('#timeline-icon-i-4').addClass('text-secondary');
+
+                    ////console.log('getItems', res);
+                    if (res.message === 'DATA NOT FOUND.') {
+                        disabledTimeline();
+                        showAlertFail();
+                    }
+                    else {
+                        let data = res.output_data;
+                        $('#trackingDisplay').slideDown();
+                        if (data.purchaseOrderDate) { setTimeline({ number: 1, dateTime: data.purchaseOrderDate, message: data.purchaseOrderNo }); }
+                        if (data.picklistDate) { setTimeline({ number: 2, dateTime: data.picklistDate, message: data.picklistNo }); }
+                        if (data.packingDate) { setTimeline({ number: 3, dateTime: data.packingDate, message: data.packingNo }); }
+                        if (data.shippedDate) { setTimeline({ number: 4, dateTime: data.shippedDate, message: data.shippedTracking, trackingLink: data.shippedWebsite, trackingName: data.purchaseOrderShipping }); }
+                    }
+                },
+                error: (res) => {
+                    disabledTimeline();
+                    showAlertFail();
+                    ////console.log(res.statusText);
+                },
+            });
+        });
+
+        $('#trackingDisplay').hide();
+
+        function setTimeline({ number, dateTime, message, trackingLink, trackingName }) {
+            $('#trackingDisplay').slideDown();
+            $('#timeline-icon-' + number).addClass('bg-orange');
+            $('#timeline-icon-' + number).removeClass('bg-light');
+
+            $('#timeline-label-' + number).addClass('bg-orange');
+            $('#timeline-label-' + number).removeClass('bg-light');
+
+            $('#timeline-title-' + number).removeClass('text-muted');
+            $('#timeline-message-' + number).removeClass('text-muted');
+
+            let date, time;
+            if (dateTime) {
+                date = moment(dateTime).format('DD/MM/YYYY')
+                time = moment(dateTime).format('HH:mm')
+            }
+
+            $('#timeline-time-' + number).text(time + 'น.');
+            $('#timeline-date-' + number).text(date);
+            $('#timeline-icon-i-' + number).removeClass('text-secondary');
+
+            if (number == 4) {
+                $('#tracking-title').removeClass('text-muted');
+                $('#tracking-link').attr('href', trackingLink);
+                $('#tracking-badge').show();
+                $('#tracking-link').show();
+                $('#tracking-link').text(trackingName);
+                $('#timeline-message-4').data('number', message);
+            }
+
+            if (number == 1) { message = `Purchase Order Number: ${message}`; }
+            if (number == 2) { message = `Pick List Number: ${message}`; }
+            if (number == 3) { message = `Packing Number: ${message}`; }
+            if (number == 4) { message = `Tracking Number: ${message}`; }
+            $('#timeline-message-' + number).text(message);
+
+
+        }
+
+        function disabledTimeline() {
+            $('#trackingDisplay').slideUp();
+
+            $('#tracking-link').attr('href', '#');
+            $('#tracking-link').text('');
+            $('#tracking-badge').hide();
+            $('#tracking-link').hide();
+            $('#tracking-title').addClass('text-muted');
+
+            for (let number = 1; number <= 4; number++) {
+                $('#timeline-icon-' + number).removeClass('bg-orange');
+                $('#timeline-icon-' + number).addClass('bg-light');
+
+                $('#timeline-label-' + number).removeClass('bg-orange');
+                $('#timeline-label-' + number).addClass('bg-light');
+
+                $('#timeline-title-' + number).addClass('text-muted');
+                $('#timeline-message-' + number).addClass('text-muted');
+
+                $('#timeline-time-' + number).text('');
+                $('#timeline-date-' + number).text('');
+
+                if (number == 1) { message = `Purchase Order Number:`; }
+                if (number == 2) { message = `Pick List Number:`; }
+                if (number == 3) { message = `Packing Number:`; }
+                if (number == 4) { message = `Tracking Number:`; }
+                $('#timeline-message-' + number).text(message);
+            }
+        }
+
+        function showAlertFail() {
+            let showBasicToast = new bootstrap.Toast($('.warning-toast'));
+            $('.warning-toast-message').text('Tracking Number ไม่ถูกต้อง');
+            showBasicToast.show();
+        }
+
+        function clipboard(el) {
+            let value = $(el).children(1).data('number');
+            ////console.log('copy text is ' + value);
+            navigator.clipboard.writeText(value);
+            toastAlert('success', 'Success', 'Copied: ' + value + '👋');
+        }
+
+        function toastAlert(type, title, message) {
+            toastr[type](message, title, {
+                closeButton: true,
+                tapToDismiss: false,
+                timeOut: 2000,
+            });
+        }
+
+    </script>
+</body>
+<!-- END: Body-->
+
+</html>

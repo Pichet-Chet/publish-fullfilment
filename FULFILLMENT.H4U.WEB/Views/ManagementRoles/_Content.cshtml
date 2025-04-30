@@ -1,0 +1,89 @@
+﻿@using FULFILLMENT.H4U.API.Model.Custom
+
+@model ViewSysRoleModel
+
+
+<div class="content-body">
+
+    <!-- Role cards -->
+    <div class="row">
+
+        @if (Model.viewSysRoleGroupModel.Count > 0)
+        {
+            foreach (var item in Model.viewSysRoleGroupModel)
+            {
+                <div class="col-xl-4 col-lg-6 col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <span>Total @item.UserCount users</span>
+                                <ul class="list-unstyled d-flex align-items-center avatar-group mb-0">
+                                    <li data-bs-toggle="tooltip" data-popup="tooltip-custom" data-bs-placement="top" title="Vinnie Mostowy" class="avatar avatar-sm pull-up">
+                                        <img class="rounded-circle" src="../../../app-assets/images/avatars/2.png" alt="Avatar" />
+                                    </li>
+                                    <li data-bs-toggle="tooltip" data-popup="tooltip-custom" data-bs-placement="top" title="Allen Rieske" class="avatar avatar-sm pull-up">
+                                        <img class="rounded-circle" src="../../../app-assets/images/avatars/12.png" alt="Avatar" />
+                                    </li>
+                                    <li data-bs-toggle="tooltip" data-popup="tooltip-custom" data-bs-placement="top" title="Julee Rossignol" class="avatar avatar-sm pull-up">
+                                        <img class="rounded-circle" src="../../../app-assets/images/avatars/6.png" alt="Avatar" />
+                                    </li>
+                                    <li data-bs-toggle="tooltip" data-popup="tooltip-custom" data-bs-placement="top" title="Kaith D'souza" class="avatar avatar-sm pull-up">
+                                        <img class="rounded-circle" src="../../../app-assets/images/avatars/11.png" alt="Avatar" />
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-end mt-1 pt-25">
+                                <div class="role-heading">
+                                    <h4 class="fw-bolder">@item.Value</h4>
+                                    <a onclick="callModal('@item.Id')" class="role-edit-modal pointer">
+                                        <small class="fw-bolder">Menu access </small>
+                                    </a>
+                                </div>
+                                <a onclick="callModal('@item.Id')" class="text-body"><i data-feather="settings" class="font-medium-5"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+
+
+    </div>
+
+
+    <!--/ Role cards -->
+
+    <h3 class="mt-50">Total users with their roles</h3>
+    <p class="mb-2">Find all of your company’s user accounts and their associate roles. <a href="@Url.Action("Index","ManagementUser")">Click here.</a></p>
+
+    <!-- Add Role Modal -->
+    <div class="modal fade" id="managementRole" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-add-new-role">
+            <div class="modal-content">
+                <div class="modal-header bg-transparent">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body px-5 pb-5" id="">
+                    <div class="text-center mb-4">
+                        <h1 class="role-title">Set menu access</h1>
+                    </div>
+                    <!-- Add role form -->
+                    <div class="col-12">
+                        <!-- Permission table -->
+                        <div id="appTable" style="height: 530px;" class="ag-theme-alpine"></div>
+                        <!-- Permission table -->
+                    </div>
+                    @*<div class="col-12 text-center mt-2">
+                        <button type="submit" class="btn btn-primary me-1">Submit</button>
+                        <button type="reset" class="btn btn-outline-secondary" data-bs-dismiss="modal" aria-label="Close">
+                            Discard
+                        </button>
+                    </div>*@
+                    <!--/ Add role form -->
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--/ Add Role Modal -->
+
+</div>

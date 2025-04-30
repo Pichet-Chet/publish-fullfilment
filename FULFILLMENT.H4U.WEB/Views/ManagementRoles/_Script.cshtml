@@ -1,0 +1,113 @@
+﻿@{
+    Layout = "~/Views/Shared/Template/_MasterScript.cshtml";
+}
+<script>
+
+    function callModal(group) {
+
+        getDataRoleItems(group);
+    }
+
+    function getDataRoleItems(groupId) {
+
+        //console.log(groupId);
+
+        var param = new Object();
+
+        param.roleGroupId = groupId;
+
+        $.ajax({
+            url: '@Url.Action("LIST_GET_ALL", ViewData["ControllerName"])',
+            data: param,
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+
+                //console.log(res);
+
+                gridOptions.api.setRowData(res);
+
+                $('#managementRole').modal('show');
+
+
+            },
+        });
+    }
+
+
+    function onFillterTable() {
+        gridOptions.api.setQuickFilter(
+            document.getElementById('filter-text-box').value
+        );
+    }
+
+    function onExportExcel() {
+        gridOptions.api.exportDataAsCsv();
+    }
+
+    function tranformDataToModel(data) {
+        Object.keys(data).forEach(function(key) {
+            if (key in model) {
+                model[key] = data[key];
+            }
+        });
+        return model;
+    }
+
+    const columnDefs = [
+
+        {
+            field: 'menuGroupName',
+            headerName: 'Group',
+            filter: 'agTextColumnFilter',
+            minWidth: 20,
+        },
+        {
+            field: 'menuName',
+            headerName: 'Menu name',
+            filter: 'agTextColumnFilter',
+            minWidth: 20,
+        },
+
+        {
+            field: 'isActive',
+            headerName: 'Allow',
+            minWidth: 20,
+            cellStyle: { textAlign: 'center' },
+            cellRenderer: function({ data }) {
+                if (data.isActive == true) {
+                    return '<div><i class="fas fa-toggle-on" data-toggle="tooltip" data-placement="bottom" title="แก้ไข" style="color:green; cursor: pointer;" onClick="updatevisible(' + data.id + ')"> ';
+                }
+                else {
+                    return '<div><i class="fas fa-toggle-off" data-toggle="tooltip" data-placement="bottom" title="แก้ไข" style="color:red; cursor: pointer;" onClick="updatevisible(' + data.id + ')"> ';
+                }
+            }
+        },
+    ];
+
+    function updatevisible(id) {
+
+        var obj = new Object();
+
+        obj.id = id;
+
+        //console.log(obj);
+
+        $.ajax({
+            type: "POST",
+            data: JSON.stringify(obj),
+            url: '@Url.Action("UPDATE_ITEM", ViewData["ControllerName"])',
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+
+                //console.log(res.output_data);
+
+                getDataRoleItems(res.output_data);
+
+            },
+        });
+
+    }
+
+</script>

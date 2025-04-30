@@ -1,0 +1,32 @@
+﻿@{
+    Layout = "~/Views/Shared/Template/_Master.cshtml";
+}
+
+<!-- Input Start-->
+<input type="hidden" class="form-control" name="sheftId" />
+
+<div class="mb-1">
+    <label class="form-label">ประเภท</label>
+    <select class="form-select" name="locationId" required>
+        <option value="">--- กรุณาเลือกข้อมูล ---</option>
+    </select>
+
+@*    <label class="form-label required">locationId</label>
+    <input type="text" class="form-control" name="locationId" required />*@
+</div>
+<div class="mb-1">
+    <label class="form-label required">ชื่อ</label>
+    <input type="text" class="form-control" name="sheftName" required />
+</div>
+<div class="mb-1">
+    <label class="form-label">รายละเอียด</label>
+    <input type="text" class="form-control" name="sheftDescription" />
+</div>
+
+<div class="mb-1">
+    <div class="form-check">
+        <input type="checkbox" class="form-check-input" name="isActive" id="isActive">
+        <label class="form-check-label" for="isActive">เปิด - ปิด</label>
+    </div>
+</div>
+<!-- Input End-->

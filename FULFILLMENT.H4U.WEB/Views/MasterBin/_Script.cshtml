@@ -1,0 +1,202 @@
+﻿@{
+Layout = "~/Views/Shared/Template/_MasterScript.cshtml";
+}
+
+<script>
+    let model = {
+        binId: 0,
+        binNumber: null,
+        //binName: null,
+        binDescription: null,
+        binType: null,
+        binStatus: null,
+        isActive: false,
+    }
+
+    function getFormData() {
+
+        let formData = new FormData(document.getElementById('form-create'));
+
+        const data = {};
+        formData.forEach((value, key) => (data[key] = value));
+
+        if (!data.binId) { data.binId = 0; }
+
+        data.binId = parseInt(data.binId);
+        data.isActive = Boolean(data.isActive);
+
+        return data;
+    }
+
+    function disabledForm({ isEdit }) {
+        if (isEdit) {
+            document.getElementsByName('binNumber')[0].disabled = true;
+        }
+        else {
+            document.getElementsByName('binNumber')[0].disabled = false;
+        }
+    }
+
+    function setForm(data) {
+
+        document.getElementsByName('binId')[0].value = data.binId;
+        document.getElementsByName('binNumber')[0].value = data.binNumber;
+
+        //document.getElementsByName('binName')[0].value = data.binName;
+        document.getElementsByName('binDescription')[0].value = data.binDescription;
+        document.getElementsByName('binType')[0].value = data.binType;
+        document.getElementsByName('binStatus')[0].value = data.binStatus;
+        document.getElementsByName('isActive')[0].checked = data.isActive;
+
+        document.getElementById('form-create-create-by').innerText = data.createBy;
+        document.getElementById('form-create-create-date').innerText = dateToFormat(data.createDate);
+        document.getElementById('form-create-update-by').innerText = data.updateBy;
+        document.getElementById('form-create-update-date').innerText = dateToFormat(data.updateDate);
+    }
+
+    let columnDefs = [
+
+        {
+            field: 'binNumber',
+            headerName: 'หมายเลข',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+            cellRenderer: function ({ value }) {
+                return '<div> ' + value + ' <i class="fas fa-copy text-secondary" data-toggle="tooltip" data-placement="bottom" title="Copy" style="cursor: pointer;" onClick="clipboard(\'' + value + '\')"> ';
+            }
+        },
+        {
+            field: 'binDescription',
+            headerName: 'รายละเอียด',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'binType',
+            headerName: 'ปรเภท',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+
+        {
+            field: 'binStatus',
+            headerName: 'สถานะ',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+            cellRenderer: function ({ value }) {
+                //console.log('>>>>>', value);
+                return ' <span class="badge bg-warning w-50">' + value + '</span>';
+
+            }
+        },
+
+
+        {
+            field: 'isActive',
+            headerName: 'เปิด - ปิด',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+            cellRenderer: function ({ value }) {
+                if (value == true) {
+                    return ' <span class="badge bg-warning w-50">ACTIVE</span>';
+                }
+                else {
+                    return ' <span class="badge bg-secondary w-50">DISABLE</span>';
+                }
+            }
+        },
+
+        {
+            field: 'action',
+            headerName: '',
+            cellStyle: { textAlign: 'center' },
+            minWidth: 50,
+            width: 50,
+            pinned: 'right',
+            cellRenderer: function (params) {
+                return `
+                    <div class="text-primary">
+                        <i class="fas fa-print" data-toggle="tooltip" data-placement="bottom" title="ปริ้น" onClick="showBarcode('${params.data.binName}')">
+                        </div>`;
+            }
+        },
+        {
+            field: 'action',
+            headerName: '',
+            cellStyle: { textAlign: 'center' },
+            minWidth: 50,
+            width: 50,
+            pinned: 'right',
+            cellRenderer: function (params) {
+                return `
+                    <div>
+                    <i class="fas fa-edit" data-toggle="tooltip" data-placement="bottom" title="แก้ไข" style="color:orange; cursor: pointer;" onClick="openEditModal('${params.data.binId}')"> 
+                        </div>`;
+            }
+        }
+
+    ];
+
+    getDropdownType();
+
+    function getDropdownType() {
+        $.ajax({
+            url: '@Url.Action("GET_TYPE", ViewData["ControllerName"])',
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+                let listType = {};
+                res.output_data.forEach((d) => {
+                    $('[name="binType"]').append(`<option value="${d.typeName}">${d.displayName}</option>`);
+                    listType[d.typeName] = { displayName: d.displayName, classColor: d.classColor };
+                    setColumnDefType(listType);
+                })
+
+                getDropdownStatus();
+
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+
+    }
+
+    function getDropdownStatus() {
+        $.ajax({
+            url: '@Url.Action("GET_STATUS", ViewData["ControllerName"])',
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+                let listType = {};
+                res.output_data.forEach((d) => {
+                    $('[name="binStatus"]').append(`<option value="${d.binStatusName}">${d.displayName}</option>`);
+                    //listType[d.binStatusName] = { displayName: d.displayName, classColor: d.classColor };
+                    //setColumnDefStatus(listType);
+                })
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+    }
+
+    function setColumnDefType(listType) {
+        columnDefs[2].cellRenderer = function ({ value }) {
+            return `<span class="text-${listType[value].classColor}">${listType[value].displayName}</span>`;
+        }
+    }
+
+    function setColumnDefStatus(listStatus) {
+
+        //console.log(listStatus);
+        columnDefs[3].cellRenderer = function ({ value }) {
+            //console.log(value)
+            return `<span class="badge bg-${listStatus[value].classColor} w-50">${listStatus[value].displayName}</span>`;
+        }
+        var gridDiv = document.querySelector('#appTable');
+        //gridDiv.innerHTML = '';
+        new agGrid.Grid(gridDiv, gridOptions);
+    }
+
+</script>

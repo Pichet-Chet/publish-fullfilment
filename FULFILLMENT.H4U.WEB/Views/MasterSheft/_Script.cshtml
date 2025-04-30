@@ -1,0 +1,135 @@
+﻿@{
+    Layout = "~/Views/Shared/Template/_MasterScript.cshtml";
+}
+
+<script>
+    let model = {
+        sheftId: 0,
+        locationId: 0,
+        sheftName: null,
+        sheftDescription: null,
+        isActive: false,
+    }
+
+    function getFormData() {
+
+        let formData = new FormData(document.getElementById('form-create'));
+
+        const data = {};
+        formData.forEach((value, key) => (data[key] = value));
+
+        if (!data.sheftId) { data.sheftId = 0; }
+
+        data.sheftId = parseInt(data.sheftId);
+        data.isActive = Boolean(data.isActive);
+
+        return data;
+    }
+
+    function disabledForm({ isEdit }) {
+        if (isEdit) {
+            document.getElementsByName('sheftName')[0].disabled = true;
+        }
+        else {
+            document.getElementsByName('sheftName')[0].disabled = false;
+        }
+    }
+
+    function setForm(data) {
+        document.getElementsByName('sheftId')[0].value = data.sheftId;
+        document.getElementsByName('locationId')[0].value = data.locationId;
+        document.getElementsByName('sheftName')[0].value = data.sheftName;
+        document.getElementsByName('sheftDescription')[0].value = data.sheftDescription;
+        document.getElementsByName('isActive')[0].checked = data.isActive;
+
+        document.getElementById('form-create-create-by').innerText = data.createBy;
+        document.getElementById('form-create-create-date').innerText = dateToFormat(data.createDate);
+        document.getElementById('form-create-update-by').innerText = data.updateBy;
+        document.getElementById('form-create-update-date').innerText = dateToFormat(data.updateDate);
+    }
+
+    let columnDefs = [
+
+        {
+            field: 'sheftName',
+            headerName: 'ชื่อ',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+            cellRenderer: function({ value }) {
+                return '<div> ' + value + ' <i class="fas fa-copy text-secondary" data-toggle="tooltip" data-placement="bottom" title="Copy" style="cursor: pointer;" onClick="clipboard(\'' + value + '\')"> ';
+            }
+        },
+        {
+            field: 'sheftDescription',
+            headerName: 'รายละเอียด',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'locationName',
+            headerName: 'พื้นที่จัดวาง',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'isActive',
+            headerName: 'เปิด - ปิด',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+            cellRenderer: function({ value }) {
+                if (value == true) {
+                    return ' <span class="badge bg-warning w-50">ACTIVE</span>';
+                }
+                else {
+                    return ' <span class="badge bg-secondary w-50">DISABLE</span>';
+                }
+            }
+        },
+        {
+            field: 'action',
+            headerName: '',
+            cellStyle: { textAlign: 'center' },
+            minWidth: 50,
+            width: 50,
+            pinned: 'right',
+            cellRenderer: function (params) {
+                return `
+                    <div class="text-primary">
+                        <i class="fas fa-print" data-toggle="tooltip" data-placement="bottom" title="ปริ้น" onClick="showBarcode('${params.data.sheftName}')">
+                        </div>`;
+            }
+        },
+        {
+            field: 'action',
+            headerName: '',
+            cellStyle: { textAlign: 'center' },
+            minWidth: 50,
+            width: 50,
+            pinned: 'right',
+            cellRenderer: function(params) {
+                return '<div><i class="fas fa-edit" data-toggle="tooltip" data-placement="bottom" title="แก้ไข" style="color:orange; cursor: pointer;" onClick="openEditModal(' + params.data.sheftId + ')"> ';
+            }
+        }
+    ];
+
+    getDropdownLocation();
+
+    function getDropdownLocation() {
+        $.ajax({
+            url: '@Url.Action("GET_ALL", "MasterLocation")',
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: (res) => {
+                res.output_data.forEach((d) => {
+                    $('[name="locationId"]').append(`<option value="${d.locationId}">${d.locationName}</option>`);
+                })
+            },
+            error: (res) => {
+                alertError(res.statusText);
+            },
+        });
+
+    }
+
+
+</script>

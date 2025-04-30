@@ -1,0 +1,13 @@
+﻿@{
+    ViewData["Title"] = "จัดการข้อมูลพื้นที่";
+    ViewData["Name"] = "";
+    ViewData["NameLower"] = "location";
+    @* ViewData["ControllerName"] = "MasterLocation"; *@
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@await Html.PartialAsync("_Content")
+
+@section Scripts {
+    @await Html.PartialAsync("_Script")
+}

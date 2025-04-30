@@ -1,0 +1,109 @@
+﻿@{ Layout = "~/Views/Shared/Template/_MasterScript.cshtml";}
+
+<script>
+    let model = {
+        locationId: 0,
+        locationName: null,
+        locationDescription: null,
+        locationType: null,
+        isActive: false,
+    }
+
+    function getFormData() {
+
+        let formData = new FormData(document.getElementById('form-create'));
+
+        const data = {};
+        formData.forEach((value, key) => (data[key] = value));
+
+        if (!data.locationId) { data.locationId = 0; }
+
+        data.locationId = parseInt(data.locationId);
+        data.isActive = Boolean(data.isActive);
+
+        return data;
+    }
+
+        function disabledForm({ isEdit }) {
+        if (isEdit) {
+            document.getElementsByName('locationName')[0].disabled = true;
+        }
+        else {
+            document.getElementsByName('locationName')[0].disabled = false;
+        }
+    }
+
+    function setForm(data) {
+        document.getElementsByName('locationId')[0].value = data.locationId;
+        document.getElementsByName('locationName')[0].value = data.locationName;
+        document.getElementsByName('locationDescription')[0].value = data.locationDescription;
+        document.getElementsByName('isActive')[0].checked = data.isActive;
+
+        document.getElementById('form-create-create-by').innerText = data.createBy;
+        document.getElementById('form-create-create-date').innerText =  dateToFormat(data.createDate);
+        document.getElementById('form-create-update-by').innerText = data.updateBy;
+        document.getElementById('form-create-update-date').innerText = dateToFormat(data.updateDate);
+    }
+
+    let columnDefs = [
+        {
+            field: 'locationName',
+            headerName: 'พื้นที่',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'locationDescription',
+            headerName: 'รายละเอียด',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+        {
+            field: 'locationType',
+            headerName: 'ประเภท',
+            filter: 'agTextColumnFilter',
+            minWidth: 200,
+        },
+
+        {
+            field: 'isActive',
+            headerName: 'เปิด - ปิด',
+            filter: 'agTextColumnFilter',
+            minWidth: 100,
+            cellRenderer: function ({ value }) {
+                if (value == true) {
+                    return ' <span class="badge bg-warning w-50">ACTIVE</span>';
+                }
+                else {
+                    return ' <span class="badge bg-secondary w-50">DISABLE</span>';
+                }
+            }
+        },
+
+        {
+            field: 'action',
+            headerName: '#',
+            cellStyle: { textAlign: 'center' },
+            minWidth: 60,
+            width: 60,
+            pinned: 'right',
+            cellRenderer: function(params) {
+                return '<div><i class="fas fa-edit" data-toggle="tooltip" data-placement="bottom" title="แก้ไข" style="color:orange; cursor: pointer;" onClick="openEditModal(' + params.data.locationId + ')"> ';
+            }
+        }
+
+        //{
+        //    field: 'action',
+        //    minWidth: 100,
+        //    pinned: 'right',
+        //    cellClass: "text-center",
+        //    cellRenderer: (params) => {
+        //        return `
+        //            <button type="button" class="btn btn-flat-info" title="edit" onClick="openEditModal(${params.data.locationId})">
+        //            <i class="fa fa-pen"></i>
+        //            </button>
+        //        `
+        //    }
+        //}
+    ];
+</script>

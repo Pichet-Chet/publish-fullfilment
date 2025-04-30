@@ -1,0 +1,13 @@
+﻿@{
+    ViewData["Title"] = "User Management";
+    ViewData["Name"] = "User";
+    ViewData["NameLower"] = "user";
+    @* ViewData["ControllerName"] = "MasterBin"; *@
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@await Html.PartialAsync("_Content")
+
+@section Scripts {
+    @await Html.PartialAsync("_Script")
+}
